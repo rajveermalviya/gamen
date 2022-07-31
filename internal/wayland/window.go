@@ -329,6 +329,20 @@ func (w *Window) SetCursorVisible(visible bool) {
 	}
 }
 
+func (w *Window) SetFullscreen(fullscreen bool) {
+	if fullscreen {
+		C.xdg_toplevel_set_fullscreen(w.xdgToplevel, nil)
+	} else {
+		C.xdg_toplevel_unset_fullscreen(w.xdgToplevel)
+	}
+}
+
+func (w *Window) Fullscreen() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.fullscreen
+}
+
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
 	w.mu.Lock()
 	w.closeRequestedCb = cb
