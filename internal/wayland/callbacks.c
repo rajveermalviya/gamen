@@ -1,9 +1,10 @@
 //go:build linux && !android
 
-#include "_cgo_export.h"
-#include "xdg-shell-client-protocol.h"
 #include <stdio.h>
+#include "_cgo_export.h"
 #include <wayland-client-protocol.h>
+#include "xdg-shell-client-protocol.h"
+#include "xdg-decoration-unstable-v1-client-protocol.h"
 
 const struct wl_registry_listener wl_registry_listener = {
     .global = (void (*)(void *, struct wl_registry *, uint32_t, const char *, uint32_t))registryHandleGlobal,
@@ -90,6 +91,12 @@ const struct xdg_toplevel_listener xdg_toplevel_listener = {
     .configure = xdgToplevelHandleConfigure,
     .close = xdgToplevelHandleClose,
     .configure_bounds = xdgToplevelConfigureBounds,
+};
+
+void zxdgToplevelDecorationHandleConfigure(void *data, struct zxdg_toplevel_decoration_v1 *zxdg_toplevel_decoration_v1, uint32_t mode) {}
+
+const struct zxdg_toplevel_decoration_v1_listener zxdg_toplevel_decoration_v1_listener = {
+    .configure = zxdgToplevelDecorationHandleConfigure,
 };
 
 const struct wl_callback_listener go_wl_callback_listener  = {

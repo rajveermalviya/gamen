@@ -4,13 +4,15 @@ package wayland
 
 /*
 
-#include "xdg-shell-client-protocol.h"
-#include <wayland-client.h>
 #include <stdlib.h>
+#include <wayland-client.h>
+#include "xdg-shell-client-protocol.h"
+#include "xdg-decoration-unstable-v1-client-protocol.h"
 
 extern const struct wl_surface_listener window_surface_listener;
 extern const struct xdg_surface_listener xdg_surface_listener;
 extern const struct xdg_toplevel_listener xdg_toplevel_listener;
+extern const struct zxdg_toplevel_decoration_v1_listener zxdg_toplevel_decoration_v1_listener;
 
 */
 import "C"
@@ -38,9 +40,10 @@ type Window struct {
 	mu          sync.Mutex
 
 	// wayland objects
-	surface     *C.struct_wl_surface
-	xdgSurface  *C.struct_xdg_surface
-	xdgToplevel *C.struct_xdg_toplevel
+	surface               *C.struct_wl_surface
+	xdgSurface            *C.struct_xdg_surface
+	xdgToplevel           *C.struct_xdg_toplevel
+	xdgToplevelDecoration *C.struct_zxdg_toplevel_decoration_v1
 
 	// state
 	scaleFactor        float64
@@ -86,6 +89,12 @@ func NewWindow(d *Display) (*Window, error) {
 	w.xdgToplevel = C.xdg_surface_get_toplevel(w.xdgSurface)
 	C.xdg_toplevel_add_listener(w.xdgToplevel, &C.xdg_toplevel_listener, unsafe.Pointer(w.handle))
 
+	if d.xdgDecorationManager != nil {
+		w.xdgToplevelDecoration = C.zxdg_decoration_manager_v1_get_toplevel_decoration(d.xdgDecorationManager, w.xdgToplevel)
+		C.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
+		C.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+	}
+
 	d.windows[w.surface] = w
 
 	w.size = dpi.LogicalSize[uint32]{
@@ -120,6 +129,11 @@ func (w *Window) Destroy() {
 		if _, ok := w.d.windows[w.surface]; ok {
 			w.d.windows[w.surface] = nil
 			delete(w.d.windows, w.surface)
+		}
+
+		if w.xdgToplevelDecoration != nil {
+			C.zxdg_toplevel_decoration_v1_destroy(w.xdgToplevelDecoration)
+			w.xdgToplevelDecoration = nil
 		}
 
 		if w.xdgToplevel != nil {

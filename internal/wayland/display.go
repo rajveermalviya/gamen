@@ -7,9 +7,10 @@ package wayland
 #cgo linux pkg-config: wayland-client wayland-cursor
 
 #include <stdlib.h>
-#include "xdg-shell-client-protocol.h"
 #include <wayland-client.h>
 #include <wayland-cursor.h>
+#include "xdg-shell-client-protocol.h"
+#include "xdg-decoration-unstable-v1-client-protocol.h"
 
 extern const struct wl_registry_listener wl_registry_listener;
 extern const struct wl_output_listener wl_output_listener;
@@ -42,12 +43,13 @@ type Display struct {
 	destroyOnce sync.Once
 
 	// wayland objects
-	display    *C.struct_wl_display
-	registry   *C.struct_wl_registry
-	compositor *C.struct_wl_compositor
-	shm        *C.struct_wl_shm
-	xdgWmBase  *C.struct_xdg_wm_base
-	seat       *C.struct_wl_seat
+	display              *C.struct_wl_display
+	registry             *C.struct_wl_registry
+	compositor           *C.struct_wl_compositor
+	shm                  *C.struct_wl_shm
+	xdgWmBase            *C.struct_xdg_wm_base
+	seat                 *C.struct_wl_seat
+	xdgDecorationManager *C.struct_zxdg_decoration_manager_v1
 
 	// wayland seats
 	pointer  *Pointer
@@ -124,6 +126,11 @@ func (d *Display) Destroy() {
 		if d.seat != nil {
 			C.wl_seat_destroy(d.seat)
 			d.seat = nil
+		}
+
+		if d.xdgDecorationManager != nil {
+			C.zxdg_decoration_manager_v1_destroy(d.xdgDecorationManager)
+			d.xdgDecorationManager = nil
 		}
 
 		if d.xdgWmBase != nil {
@@ -276,6 +283,9 @@ func registryHandleGlobal(data unsafe.Pointer, wl_registry *C.struct_wl_registry
 
 	case C.GoString(C.wl_shm_interface.name):
 		d.shm = (*C.struct_wl_shm)(C.wl_registry_bind(wl_registry, name, &C.wl_shm_interface, version))
+
+	case C.GoString(C.zxdg_decoration_manager_v1_interface.name):
+		d.xdgDecorationManager = (*C.struct_zxdg_decoration_manager_v1)(C.wl_registry_bind(wl_registry, name, &C.zxdg_decoration_manager_v1_interface, version))
 
 	case C.GoString(C.wl_output_interface.name):
 		output := (*C.struct_wl_output)(C.wl_registry_bind(wl_registry, name, &C.wl_output_interface, version))
