@@ -458,6 +458,61 @@ func (w *Window) SetCursorVisible(visible bool) {
 	}
 }
 
+func (w *Window) SetFullscreen(fullscreen bool) {
+	event := C.xcb_client_message_event_t{
+		response_type: C.XCB_CLIENT_MESSAGE,
+		format:        32,
+		sequence:      0,
+		window:        w.win,
+		_type:         w.d.netWmState,
+	}
+
+	data := (*[5]uint32)(unsafe.Pointer(&event.data))
+	if fullscreen {
+		data[0] = 1
+	} else {
+		data[0] = 0
+	}
+	data[1] = uint32(w.d.netWmStateFullscreen)
+
+	C.xcb_send_event(
+		w.d.xcbConn,
+		0,
+		w.d.screens[0].xcbScreen.root,
+		C.XCB_EVENT_MASK_STRUCTURE_NOTIFY|C.XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT,
+		(*C.char)(unsafe.Pointer(&event)),
+	)
+	C.xcb_flush(w.d.xcbConn)
+}
+func (w *Window) Fullscreen() bool {
+	r := C.xcb_get_property_reply(
+		w.d.xcbConn,
+		C.xcb_get_property(
+			w.d.xcbConn,
+			0,
+			w.win,
+			w.d.netWmState,
+			C.XCB_ATOM_ATOM,
+			0,
+			1024,
+		),
+		nil,
+	)
+	defer C.free(unsafe.Pointer(r))
+
+	dataSlice := unsafe.Slice(
+		(*C.xcb_atom_t)(C.xcb_get_property_value(r)),
+		uintptr(C.xcb_get_property_value_length(r))/unsafe.Sizeof(C.xcb_atom_t(0)),
+	)
+
+	for _, atom := range dataSlice {
+		if atom == w.d.netWmStateFullscreen {
+			return true
+		}
+	}
+	return false
+}
+
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
 	w.mu.Lock()
 	w.closeRequestedCb = cb

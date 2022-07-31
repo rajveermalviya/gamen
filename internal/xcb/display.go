@@ -70,6 +70,7 @@ type Display struct {
 	netWmState              C.xcb_atom_t
 	netWmStateMaximizedHorz C.xcb_atom_t
 	netWmStateMaximizedVert C.xcb_atom_t
+	netWmStateFullscreen    C.xcb_atom_t
 	relHorizWheel           C.xcb_atom_t
 	relVertWheel            C.xcb_atom_t
 	relHorizScroll          C.xcb_atom_t
@@ -161,6 +162,7 @@ func NewDisplay() (*Display, error) {
 		d.netWmState = internAtom(d.xcbConn, false, "_NET_WM_STATE")
 		d.netWmStateMaximizedHorz = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_HORZ")
 		d.netWmStateMaximizedVert = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_VERT")
+		d.netWmStateFullscreen = internAtom(d.xcbConn, false, "_NET_WM_STATE_FULLSCREEN")
 
 		d.relHorizWheel = internAtom(d.xcbConn, false, "Rel Horiz Wheel")
 		d.relVertWheel = internAtom(d.xcbConn, false, "Rel Vert Wheel")
