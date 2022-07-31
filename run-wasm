@@ -1,0 +1,3 @@
+#!/bin/bash
+
+go run ./scripts/run-wasm.go

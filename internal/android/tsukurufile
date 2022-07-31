@@ -1,0 +1,5 @@
+tsukuru v1alpha
+
+android (
+    "androidx.games:games-activity:1.2.1"
+)
