@@ -36,6 +36,7 @@ type Window struct {
 	currentCursor      cursors.Icon
 	maximized          bool
 	fullscreen         bool
+	wpPrev             procs.WINDOWPLACEMENT
 
 	// callbacks
 	resizedCb           events.WindowResizedCallback
@@ -234,6 +235,57 @@ func (w *Window) SetCursorVisible(visible bool) {
 	} else {
 		procs.ShowCursor(0)
 	}
+}
+
+func (w *Window) SetFullscreen(fullscreen bool) {
+	dwStyle := procs.GetWindowLong(w.hwnd, procs.GWL_STYLE)
+
+	if fullscreen {
+		mi := procs.MONITORINFO{
+			CbSize: uint32(unsafe.Sizeof(procs.MONITORINFO{})),
+		}
+		monitor := procs.MonitorFromWindow(w.hwnd, procs.MONITOR_DEFAULTTOPRIMARY)
+
+		var wp procs.WINDOWPLACEMENT
+		if procs.GetWindowPlacement(w.hwnd, uintptr(unsafe.Pointer(&wp))) &&
+			procs.GetMonitorInfoW(monitor, uintptr(unsafe.Pointer(&mi))) {
+			w.mu.Lock()
+			w.wpPrev = wp
+			w.mu.Unlock()
+
+			procs.SetWindowLong(w.hwnd, procs.GWL_STYLE, dwStyle&^procs.WS_OVERLAPPEDWINDOW)
+			procs.SetWindowPos(
+				w.hwnd, procs.HWND_TOP,
+				uintptr(mi.RcMonitor.Left), uintptr(mi.RcMonitor.Top),
+				uintptr(mi.RcMonitor.Right-mi.RcMonitor.Left),
+				uintptr(mi.RcMonitor.Bottom-mi.RcMonitor.Top),
+				procs.SWP_NOOWNERZORDER|procs.SWP_FRAMECHANGED,
+			)
+		}
+	} else {
+		w.mu.Lock()
+		wp := w.wpPrev
+		w.mu.Unlock()
+
+		procs.SetWindowLong(w.hwnd, procs.GWL_STYLE, dwStyle|procs.WS_OVERLAPPEDWINDOW)
+		procs.SetWindowPlacement(w.hwnd, uintptr(unsafe.Pointer(&wp)))
+		procs.SetWindowPos(
+			w.hwnd, 0,
+			0, 0,
+			0, 0,
+			procs.SWP_NOMOVE|procs.SWP_NOSIZE|
+				procs.SWP_NOZORDER|procs.SWP_NOOWNERZORDER|
+				procs.SWP_FRAMECHANGED,
+		)
+	}
+}
+
+func (w *Window) Fullscreen() bool {
+	dwStyle := procs.GetWindowLong(w.hwnd, procs.GWL_STYLE)
+	if dwStyle&procs.WS_OVERLAPPEDWINDOW != 0 {
+		return false
+	}
+	return true
 }
 
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {

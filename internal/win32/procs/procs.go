@@ -49,6 +49,10 @@ var (
 	_ShowWindow               = user32.NewProc("ShowWindow")
 	_GetCursorPos             = user32.NewProc("GetCursorPos")
 	_SetWindowTextW           = user32.NewProc("SetWindowTextW")
+	_GetWindowPlacement       = user32.NewProc("GetWindowPlacement")
+	_SetWindowPlacement       = user32.NewProc("SetWindowPlacement")
+	_MonitorFromWindow        = user32.NewProc("MonitorFromWindow")
+	_GetMonitorInfoW          = user32.NewProc("GetMonitorInfoW")
 )
 
 func GetModuleHandleW() (r uintptr) {
@@ -136,16 +140,17 @@ func RegisterClassExW(class uintptr) (r uintptr) {
 }
 
 const (
-	WS_OVERLAPPED   = 0
-	WS_SIZEBOX      = 262144
-	WS_MAXIMIZEBOX  = 65536
-	WS_CAPTION      = 12582912
-	WS_MINIMIZEBOX  = 131072
-	WS_BORDER       = 8388608
-	WS_VISIBLE      = 268435456
-	WS_CLIPSIBLINGS = 67108864
-	WS_CLIPCHILDREN = 33554432
-	WS_SYSMENU      = 524288
+	WS_OVERLAPPED       = 0
+	WS_SIZEBOX          = 262144
+	WS_MAXIMIZEBOX      = 65536
+	WS_CAPTION          = 12582912
+	WS_MINIMIZEBOX      = 131072
+	WS_BORDER           = 8388608
+	WS_VISIBLE          = 268435456
+	WS_CLIPSIBLINGS     = 67108864
+	WS_CLIPCHILDREN     = 33554432
+	WS_SYSMENU          = 524288
+	WS_OVERLAPPEDWINDOW = 13565952
 )
 
 const (
@@ -658,6 +663,11 @@ const SWP_NOZORDER = 4
 const SWP_NOREPOSITION = 512
 const SWP_NOMOVE = 2
 const SWP_NOACTIVATE = 16
+const SWP_NOOWNERZORDER = 512
+const SWP_FRAMECHANGED = 32
+const SWP_NOSIZE = 1
+
+const HWND_TOP = 0
 
 func SetWindowPos(hWnd, hWndInsertAfter, X, Y, cx, cy, uFlags uintptr) bool {
 	r, _, _ := _SetWindowPos.Call(hWnd, hWndInsertAfter, X, Y, cx, cy, uFlags)
@@ -700,5 +710,44 @@ func GetCursorPos(point uintptr) bool {
 
 func SetWindowTextW(hwnd, lpstring uintptr) bool {
 	r, _, _ := _SetWindowTextW.Call(hwnd, lpstring)
+	return r != 0
+}
+
+type WINDOWPLACEMENT struct {
+	length           uint32
+	flags            uint32
+	showCmd          uint32
+	ptMinPosition    POINT
+	ptMaxPosition    POINT
+	rcNormalPosition RECT
+}
+
+func GetWindowPlacement(hWnd, lpwndpl uintptr) bool {
+	r, _, _ := _GetWindowPlacement.Call(hWnd, lpwndpl)
+	return r != 0
+}
+func SetWindowPlacement(hWnd, lpwndpl uintptr) bool {
+	r, _, _ := _SetWindowPlacement.Call(hWnd, lpwndpl)
+	return r != 0
+}
+
+func MonitorFromWindow(hwnd, dwFlags uintptr) uintptr {
+	r, _, _ := _MonitorFromWindow.Call(hwnd, dwFlags)
+	return r
+}
+
+type MONITORINFO struct {
+	CbSize    uint32
+	RcMonitor RECT
+	RcWork    RECT
+	DwFlags   uint32
+}
+
+const (
+	MONITOR_DEFAULTTOPRIMARY = 1
+)
+
+func GetMonitorInfoW(hMonitor, lpmi uintptr) bool {
+	r, _, _ := _GetMonitorInfoW.Call(hMonitor, lpmi)
 	return r != 0
 }
