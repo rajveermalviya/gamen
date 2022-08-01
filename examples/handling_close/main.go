@@ -39,7 +39,7 @@ func main() {
 
 loop:
 	for {
-		if !d.Poll() {
+		if !d.Wait() {
 			break loop
 		}
 	}

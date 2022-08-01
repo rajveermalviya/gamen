@@ -1,0 +1,6 @@
+github.com/rajveermalviya/go-webgpu/wgpu v0.0.0-20220725131244-a2179698f23d h1:opOFNIX4qEQdP/UV31ix7YfRnz0RnaTxpCxq0aAEc6s=
+github.com/rajveermalviya/go-webgpu/wgpu v0.0.0-20220725131244-a2179698f23d/go.mod h1:a8otxFj3omOkqCzgGaFbYiQ/PLSghjEvkEioSm94vLo=
+golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d h1:vtUKgx8dahOomfFzLREU8nSv25YHnTgLBn4rDnWZdU0=
+golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d/go.mod h1:Kr81I6Kryrl9sr8s2FK3vxD90NdsKWRuOIl2O4CvYbA=
+golang.org/x/sys v0.0.0-20220624220833-87e55d714810 h1:rHZQSjJdAI4Xf5Qzeh2bBc5YJIkPFVM6oDtMFYmgws0=
+golang.org/x/sys v0.0.0-20220624220833-87e55d714810/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

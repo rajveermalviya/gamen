@@ -3,5 +3,6 @@ go 1.18
 use (
 	.
 	./examples
-	./examples/wgpu
+	./examples/wgpu_poll
+	./examples/wgpu_wait
 )

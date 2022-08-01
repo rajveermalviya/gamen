@@ -5,8 +5,6 @@ import (
 	"runtime"
 
 	"github.com/rajveermalviya/gamen/display"
-	"github.com/rajveermalviya/gamen/dpi"
-	"github.com/rajveermalviya/gamen/events"
 	"github.com/rajveermalviya/go-webgpu/wgpu"
 
 	_ "embed"
@@ -39,7 +37,7 @@ type app struct {
 func (a *app) init() {
 	var err error
 
-	a.adapter, err = wgpu.RequestAdapter(&wgpu.RequestAdapterOptions{})
+	a.adapter, err = wgpu.RequestAdapter(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -271,7 +269,7 @@ func main() {
 	}
 	defer w.Destroy()
 
-	w.SetTitle("go display")
+	w.SetTitle("gamen wgpu_poll example")
 
 	a := &app{window: w}
 	a.init()
@@ -289,21 +287,6 @@ func main() {
 		println(fmt.Sprintf("Resized: physicalWidth=%v physicalHeight=%v scaleFactor=%v", physicalWidth, physicalHeight, scaleFactor))
 
 		a.resize(physicalWidth, physicalHeight)
-	})
-
-	imeEnabled := false
-	w.SetTouchInputCallback(func(phase events.TouchPhase, location dpi.PhysicalPosition[float64], id events.TouchPointerID) {
-		if phase == events.TouchPhaseStarted {
-			if w, ok := w.(display.AndroidWindowExt); ok {
-				if imeEnabled {
-					w.DisableIme()
-					imeEnabled = false
-				} else {
-					w.EnableIme()
-					imeEnabled = true
-				}
-			}
-		}
 	})
 
 	w.SetCloseRequestedCallback(func() { d.Destroy() })

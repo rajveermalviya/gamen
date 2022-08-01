@@ -1,4 +1,4 @@
-module github.com/rajveermalviya/gamen/examples/wgpu
+module github.com/rajveermalviya/gamen/examples/wgpu_wait
 
 go 1.18
 
