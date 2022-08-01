@@ -207,6 +207,7 @@ func (w *Window) Destroy() {
 		}
 
 		C.xcb_destroy_window(w.d.xcbConn, w.win)
+		C.xcb_flush(w.d.xcbConn)
 	})
 }
 
