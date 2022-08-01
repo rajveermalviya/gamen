@@ -34,6 +34,9 @@ type Window interface {
 	SetCursorIcon(cursors.Icon)
 	SetCursorVisible(visible bool)
 
+	SetFullscreen(fullscreen bool)
+	Fullscreen() bool
+
 	SetResizedCallback(events.WindowResizedCallback)
 	SetCloseRequestedCallback(events.WindowCloseRequestedCallback)
 
