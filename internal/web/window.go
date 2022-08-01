@@ -87,6 +87,8 @@ func (w *Window) Destroy() {
 	})
 }
 
+func (w *Window) WebCanvas() js.Value { return w.canvas }
+
 func (w *Window) SetTitle(title string) {
 	js.Global().Get("document").Set("title", title)
 }
@@ -133,6 +135,21 @@ func (w *Window) SetCursorVisible(visible bool) {
 	}
 
 	w.canvas.Get("style").Call("setProperty", "cursor", icon)
+}
+
+func (w *Window) SetFullscreen(fullscreen bool) {
+	if fullscreen {
+		w.canvas.Call("requestFullscreen")
+	} else {
+		js.Global().Get("document").Call("exitFullscreen")
+	}
+}
+func (w *Window) Fullscreen() bool {
+	el := js.Global().Get("document").Get("fullscreenElement")
+	if w.canvas.Equal(el) {
+		return true
+	}
+	return false
 }
 
 func (*Window) SetMinInnerSize(size dpi.Size[uint32]) {}

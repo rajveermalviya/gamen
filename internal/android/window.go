@@ -66,6 +66,8 @@ func (*Window) SetMinimized()                    {}
 func (*Window) SetMaximized(maximized bool)      {}
 func (*Window) SetCursorIcon(cursors.Icon)       {}
 func (*Window) SetCursorVisible(visible bool)    {}
+func (*Window) SetFullscreen(fullscreen bool)    {}
+func (*Window) Fullscreen() bool                 { return false }
 
 func (w *Window) SetSurfaceCreatedCallback(cb events.WindowSurfaceCreatedCallback) {
 	cbMut.Lock()
