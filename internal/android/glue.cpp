@@ -24,6 +24,9 @@ void display_poll(int timeoutMillis) {
 
 void display_set_handler(struct android_app* app) {
   app->onAppCmd = display_handle_command;
+
+  android_app_set_key_event_filter(app, (android_key_event_filter)display_handle_key_event);
+  android_app_set_motion_event_filter(app, (android_motion_event_filter)display_handle_motion_event);
 }
 
 }
