@@ -26,6 +26,12 @@ func main() {
 	}
 	defer w.Destroy()
 
+	// On web, we don't append the canvas created by NewWindow
+	// to body, users have explicitly do it.
+	//
+	// So this helper function does that
+	initWebCanvas(w)
+
 	w.SetTitle("gamen hello example")
 
 	if w, ok := w.(display.AndroidWindowExt); ok {

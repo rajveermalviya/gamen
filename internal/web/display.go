@@ -4,6 +4,7 @@ package web
 
 import (
 	"sync"
+	"syscall/js"
 	"time"
 )
 
@@ -24,12 +25,33 @@ func NewDisplay() (*Display, error) {
 }
 
 func (d *Display) Poll() bool {
+	wait := make(chan struct{})
+	js.Global().Call("requestAnimationFrame", js.FuncOf(func(this js.Value, args []js.Value) any {
+		if d.destroyed {
+			return nil
+		}
+
+		wait <- struct{}{}
+
+		return nil
+	}))
+
 	for {
 		select {
 		case cb := <-d.eventCallbacksChan:
 			cb()
-		default:
-			// should we throttle via requestAnimationFrame ?
+
+		loop:
+			for {
+				select {
+				case cb := <-d.eventCallbacksChan:
+					cb()
+				default:
+					break loop
+				}
+			}
+
+		case <-wait:
 			return !d.destroyed
 		}
 	}
