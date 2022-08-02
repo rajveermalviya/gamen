@@ -1,3 +1,6 @@
+# See
+# https://github.com/github/linguist/blob/249bbd1c2ffc631ca2ec628da26be5800eec3d48/docs/overrides.md#vendored-code
+
 xdg-shell-client-protocol.h linguist-vendored
 xdg-shell-protocol.c linguist-vendored
 xdg-decoration-unstable-v1-client-protocol.h linguist-vendored
