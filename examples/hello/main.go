@@ -50,7 +50,7 @@ func main() {
 		logf("CursorMoved: physicalX=%v physicalY=%v", physicalX, physicalY)
 	})
 
-	w.SetMouseWheelCallback(func(delta events.MouseScrollDelta, axis events.MouseScrollAxis, value float64) {
+	w.SetMouseScrollCallback(func(delta events.MouseScrollDelta, axis events.MouseScrollAxis, value float64) {
 		logf("MouseWheel: delta=%v axis=%v value=%v", delta, axis, value)
 	})
 	w.SetMouseInputCallback(func(state events.ButtonState, button events.MouseButton) {

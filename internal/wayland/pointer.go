@@ -349,7 +349,7 @@ func pointerHandleFrame(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer) {
 	}
 
 	w.mu.Lock()
-	var mouseWheelCb events.WindowMouseWheelCallback
+	var mouseWheelCb events.WindowMouseScrollCallback
 	if w.mouseWheelCb != nil {
 		mouseWheelCb = w.mouseWheelCb
 	}

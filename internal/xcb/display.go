@@ -624,7 +624,7 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 		}
 
 		w.mu.Lock()
-		var mouseWheelCb events.WindowMouseWheelCallback
+		var mouseWheelCb events.WindowMouseScrollCallback
 		if w.mouseWheelCb != nil {
 			mouseWheelCb = w.mouseWheelCb
 		}
@@ -687,7 +687,7 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 		axisValuesIndex := 0
 
 		for i := C.uint16_t(0); i < C.uint16_t(maskLen)*8; i++ {
-			// ahh bitset
+			// it's bitset 32
 			if (mask[i>>3] & (1 << (i & 7))) != 0 {
 				if dev.horizontalScroll.index == i {
 					x := fixed3232ToFloat64(axisValues[axisValuesIndex])
@@ -698,7 +698,7 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 					d.scrollingDevices[ev.sourceid] = dev
 
 					w.mu.Lock()
-					var mouseWheelCb events.WindowMouseWheelCallback
+					var mouseWheelCb events.WindowMouseScrollCallback
 					if w.mouseWheelCb != nil {
 						mouseWheelCb = w.mouseWheelCb
 					}
@@ -721,7 +721,7 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 					d.scrollingDevices[ev.sourceid] = dev
 
 					w.mu.Lock()
-					var mouseWheelCb events.WindowMouseWheelCallback
+					var mouseWheelCb events.WindowMouseScrollCallback
 					if w.mouseWheelCb != nil {
 						mouseWheelCb = w.mouseWheelCb
 					}

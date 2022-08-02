@@ -31,7 +31,7 @@ type Window struct {
 	cursorEnteredCb     events.WindowCursorEnteredCallback
 	cursorLeftCb        events.WindowCursorLeftCallback
 	cursorMovedCb       events.WindowCursorMovedCallback
-	mouseWheelCb        events.WindowMouseWheelCallback
+	mouseWheelCb        events.WindowMouseScrollCallback
 	mouseInputCb        events.WindowMouseInputCallback
 	modifiersChangedCb  events.WindowModifiersChangedCallback
 	keyboardInputCb     events.WindowKeyboardInputCallback
@@ -413,7 +413,7 @@ func (w *Window) SetCursorEnteredCallback(cb events.WindowCursorEnteredCallback)
 }
 func (w *Window) SetCursorLeftCallback(cb events.WindowCursorLeftCallback)   { w.cursorLeftCb = cb }
 func (w *Window) SetCursorMovedCallback(cb events.WindowCursorMovedCallback) { w.cursorMovedCb = cb }
-func (w *Window) SetMouseWheelCallback(cb events.WindowMouseWheelCallback)   { w.mouseWheelCb = cb }
+func (w *Window) SetMouseScrollCallback(cb events.WindowMouseScrollCallback) { w.mouseWheelCb = cb }
 func (w *Window) SetMouseInputCallback(cb events.WindowMouseInputCallback)   { w.mouseInputCb = cb }
 func (w *Window) SetTouchInputCallback(cb events.WindowTouchInputCallback) {
 	// TODO:

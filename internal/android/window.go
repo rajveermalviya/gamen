@@ -114,6 +114,6 @@ func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallbac
 func (w *Window) SetCursorEnteredCallback(cb events.WindowCursorEnteredCallback)       {}
 func (w *Window) SetCursorLeftCallback(cb events.WindowCursorLeftCallback)             {}
 func (w *Window) SetCursorMovedCallback(cb events.WindowCursorMovedCallback)           {}
-func (w *Window) SetMouseWheelCallback(cb events.WindowMouseWheelCallback)             {}
+func (w *Window) SetMouseScrollCallback(cb events.WindowMouseScrollCallback)           {}
 func (w *Window) SetMouseInputCallback(cb events.WindowMouseInputCallback)             {}
 func (w *Window) SetModifiersChangedCallback(cb events.WindowModifiersChangedCallback) {}

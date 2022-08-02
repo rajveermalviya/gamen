@@ -157,7 +157,7 @@ type (
 	WindowCursorEnteredCallback     func()
 	WindowCursorLeftCallback        func()
 	WindowCursorMovedCallback       func(physicalX, physicalY float64)
-	WindowMouseWheelCallback        func(delta MouseScrollDelta, axis MouseScrollAxis, value float64)
+	WindowMouseScrollCallback       func(delta MouseScrollDelta, axis MouseScrollAxis, value float64)
 	WindowMouseInputCallback        func(state ButtonState, button MouseButton)
 	WindowFocusedCallback           func()
 	WindowUnfocusedCallback         func()

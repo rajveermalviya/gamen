@@ -48,7 +48,7 @@ type Window struct {
 	cursorEnteredCb     events.WindowCursorEnteredCallback
 	cursorLeftCb        events.WindowCursorLeftCallback
 	cursorMovedCb       events.WindowCursorMovedCallback
-	mouseWheelCb        events.WindowMouseWheelCallback
+	mouseWheelCb        events.WindowMouseScrollCallback
 	mouseInputCb        events.WindowMouseInputCallback
 	modifiersChangedCb  events.WindowModifiersChangedCallback
 	keyboardInputCb     events.WindowKeyboardInputCallback
@@ -549,7 +549,7 @@ func (w *Window) SetCursorMovedCallback(cb events.WindowCursorMovedCallback) {
 	w.cursorMovedCb = cb
 	w.mu.Unlock()
 }
-func (w *Window) SetMouseWheelCallback(cb events.WindowMouseWheelCallback) {
+func (w *Window) SetMouseScrollCallback(cb events.WindowMouseScrollCallback) {
 	w.mu.Lock()
 	w.mouseWheelCb = cb
 	w.mu.Unlock()
