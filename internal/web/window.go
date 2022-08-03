@@ -80,6 +80,7 @@ func (w *Window) Destroy() {
 
 		for event, listener := range w.listeners {
 			w.canvas.Call("removeEventListener", event, listener)
+			listener.Release()
 		}
 		w.listeners = nil
 

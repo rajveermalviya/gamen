@@ -26,7 +26,7 @@ func NewDisplay() (*Display, error) {
 
 func (d *Display) Poll() bool {
 	wait := make(chan struct{})
-	js.Global().Call("requestAnimationFrame", js.FuncOf(func(this js.Value, args []js.Value) any {
+	cb := js.FuncOf(func(this js.Value, args []js.Value) any {
 		if d.destroyed {
 			return nil
 		}
@@ -34,7 +34,9 @@ func (d *Display) Poll() bool {
 		wait <- struct{}{}
 
 		return nil
-	}))
+	})
+	defer cb.Release()
+	js.Global().Call("requestAnimationFrame", cb)
 
 	for {
 		select {
