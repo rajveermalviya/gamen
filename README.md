@@ -40,10 +40,11 @@ func main() {
 
 	w.SetCloseRequestedCallback(func() { d.Destroy() })
 
-loop:
 	for {
+		// render here
+
 		if !d.Wait() {
-			break loop
+			break
 		}
 	}
 }

@@ -291,12 +291,11 @@ func main() {
 
 	w.SetCloseRequestedCallback(func() { d.Destroy() })
 
-loop:
 	for {
 		a.redraw()
 
 		if !d.Poll() {
-			break loop
+			break
 		}
 	}
 }

@@ -79,10 +79,11 @@ func main() {
 		d.Destroy()
 	})
 
-loop:
 	for {
+		// render here
+
 		if !d.Wait() {
-			break loop
+			break
 		}
 	}
 }

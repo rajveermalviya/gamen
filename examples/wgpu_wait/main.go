@@ -296,16 +296,14 @@ func main() {
 
 	w.SetCloseRequestedCallback(func() { d.Destroy() })
 
-loop:
 	for {
-		if !d.Wait() {
-			break loop
-		}
-
 		if redrawNeeded {
 			redrawNeeded = false
-
 			a.redraw()
+		}
+
+		if !d.Wait() {
+			break
 		}
 	}
 }
