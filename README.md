@@ -69,6 +69,12 @@ resulting binaries shouldn't require any dependency to be installed by the users
 sudo dnf install wayland-devel libX11-devel libXcursor-devel libxkbcommon-x11-devel xcb-util-image-devel xcb-util-wm-devel
 ```
 
+#### ubuntu
+
+```shell
+sudo apt install libwayland-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb-randr0-dev libxcb-xinput-dev libxcb-icccm4-dev libxcursor-dev libxcb-image0-dev
+```
+
 <!-- TODO: other distros -->
 
 ### android

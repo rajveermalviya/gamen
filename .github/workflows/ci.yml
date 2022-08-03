@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test-build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Test build on linux for linux
+            os: ubuntu-22.04
+            setup_env: |
+              set -x
+              sudo apt update
+              sudo apt install libwayland-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb-randr0-dev libxcb-xinput-dev libxcb-icccm4-dev libxcursor-dev libxcb-image0-dev
+
+            goos: linux
+            build_cmd: go build
+
+          - name: Test build on windows for windows
+            os: windows-2022
+            goos: windows
+            build_cmd: go build
+
+          - name: Test build on linux for windows
+            os: ubuntu-22.04
+            goos: windows
+            build_cmd: GOOS=windows go build
+
+          - name: Test build on linux for web
+            os: ubuntu-22.04
+            goos: js
+            build_cmd: GOOS=js GOARCH=wasm go build
+
+          - name: Test build on linux for android
+            os: ubuntu-22.04
+            goos: android
+            setup_env: |
+              go install github.com/rajveermalviya/tsukuru/cmd/tsukuru@latest
+            build_cmd: tsukuru build apk
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.19"
+      - name: Setup Environment
+        run: ${{ matrix.setup_env }}
+        shell: bash
+      - name: Run build tests
+        shell: bash
+        run: |
+          set -x;
+          cd examples/hello
+          ${{ matrix.build_cmd }} -o out .
+          file out
