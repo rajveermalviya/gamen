@@ -10,10 +10,12 @@ import (
 	"github.com/rajveermalviya/gamen/internal/xcb"
 )
 
-var backend = os.Getenv("GAMEN_DISPLAY_BACKEND")
-
+// NewDisplay initializes the event loop and returns
+// a handle to manage it.
+//
+// Must only be called from main goroutine.
 func NewDisplay() (Display, error) {
-	switch backend {
+	switch os.Getenv("GAMEN_DISPLAY_BACKEND") {
 	case "wayland":
 		return wayland.NewDisplay()
 
@@ -33,6 +35,13 @@ func NewDisplay() (Display, error) {
 	}
 }
 
+// NewWindow creates a new window for the provided
+// display event loop.
+//
+// To receive events you must set individual callbacks
+// via Set[event]Callback methods.
+//
+// Must only be called from main goroutine.
 func NewWindow(d Display) (Window, error) {
 	switch d := d.(type) {
 	case *wayland.Display:
