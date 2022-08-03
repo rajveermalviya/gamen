@@ -57,7 +57,7 @@ examples `wgpu_poll` and `wgpu_wait` shows how to use the event loop for a Game 
 
 ### windows
 
-windows (win32) backend **does not** use CGO or require a C toolchain, only Go compiler is enough
+windows (win32) backend **does not** use CGO, i.e **does not** require a C toolchain, only Go compiler is enough
 
 ### linux
 
@@ -94,32 +94,34 @@ an incomplete list of features in no particular order that are supported or that
 | window initialization        | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | handles for OpenGL init      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | handles for Vulkan WSI       | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| show window with decorations | :heavy_check_mark: | :heavy_check_mark: | :x:                | :heavy_check_mark: | **N/A**            |
+| show window with decorations | :heavy_check_mark: | :heavy_check_mark: | :exclamation: [#2] | :heavy_check_mark: | **N/A**            |
 | window decorations toggle    | :x:                | :x:                | :x:                | :x:                | **N/A**            |
 | window resizing events       | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            |
-| resizing window via method   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            |
+| resizing window manually     | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            | **N/A**            |
 | window transparency          | :x:                | :x:                | :x:                | :x:                | :x:                |
-| window maximization toggle   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            |
-| window minimization          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            |
+| window maximization toggle   | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            | **N/A**            |
+| window minimization          | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            | **N/A**            |
 | fullscreen toggle            | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | HiDPI support                | :x:                | :x:                | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| popups                       | :x:                | :x:                | :x:                | :x:                | **N/A**            |
+| popups                       | :x:                | :x:                | :x:                | **N/A**            | **N/A**            |
 | monitor list                 | :x:                | :x:                | :x:                | :x:                | :x:                |
 | video mode query             | :x:                | :x:                | :x:                | :x:                | :x:                |
 | mouse events                 | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            | :heavy_check_mark: |
 | cursor locking               | :x:                | :x:                | :x:                | :x:                | :x:                |
 | cursor confining             | :x:                | :x:                | :x:                | :x:                | :x:                |
 | cursor icon                  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            | :heavy_check_mark: |
-| cursor hittest               | :x:                | :x:                | :x:                | :x:                | :x:                |
+| cursor hittest               | :x:                | :x:                | :x:                | **N/A**            | :x:                |
 | touch events                 | :x:                | :x:                | :x:                | :heavy_check_mark: | :x:                |
 | keyboard events              | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | drag window with cursor      | :x:                | :x:                | :x:                | **N/A**            | **N/A**            |
-| drag & drop                  | :x:                | :x:                | :x:                | :x:                | :x:                |
+| drag & drop                  | :x:                | :x:                | :x:                | **N/A**            | :x:                |
 | raw device events            | :x:                | :x:                | :x:                | :x:                | :x:                |
 | gamepad/joystick events      | :x:                | :x:                | :x:                | :x:                | :x:                |
 | ime                          | :x:                | :x:                | :x:                | :x:                | :x:                |
 | clipboard                    | :x:                | :x:                | :x:                | :x:                | :x:                |
 | theme change events          | :x:                | :x:                | :x:                | :x:                | :x:                |
+
+[#2]: https://github.com/rajveermalviya/gamen/issues/2
 
 (as you can see there are many :x:s so any help will be greatly appreciated)
 
