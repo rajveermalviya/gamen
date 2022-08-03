@@ -1,7 +1,7 @@
 github.com/rajveermalviya/gamen v0.0.0-20220801100918-94a83215f676 h1:dPK8g6b5IGeJbF6z6AS6gcFPhznoJERpoOvMnD3SQlQ=
 github.com/rajveermalviya/gamen v0.0.0-20220801100918-94a83215f676/go.mod h1:EWKU/nBQlikyrSnQY7zREgt4OgcksiYwEyuS063Ru88=
-github.com/rajveermalviya/go-webgpu/wgpu v0.1.2 h1:3HLOF0KjF6hTwmFhK0ctTm2DWIT1Z0306rwh1LAZMc4=
-github.com/rajveermalviya/go-webgpu/wgpu v0.1.2/go.mod h1:a8otxFj3omOkqCzgGaFbYiQ/PLSghjEvkEioSm94vLo=
+github.com/rajveermalviya/go-webgpu/wgpu v0.1.3 h1:7OAHunZEJ+iZQb0KRqXbL4kCpfd12n/LhRifD0XxU6k=
+github.com/rajveermalviya/go-webgpu/wgpu v0.1.3/go.mod h1:a8otxFj3omOkqCzgGaFbYiQ/PLSghjEvkEioSm94vLo=
 golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d h1:vtUKgx8dahOomfFzLREU8nSv25YHnTgLBn4rDnWZdU0=
 golang.org/x/exp v0.0.0-20220613132600-b0d781184e0d/go.mod h1:Kr81I6Kryrl9sr8s2FK3vxD90NdsKWRuOIl2O4CvYbA=
 golang.org/x/sys v0.0.0-20220624220833-87e55d714810 h1:rHZQSjJdAI4Xf5Qzeh2bBc5YJIkPFVM6oDtMFYmgws0=

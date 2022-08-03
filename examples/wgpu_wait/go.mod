@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/rajveermalviya/gamen v0.0.0-20220801100918-94a83215f676
-	github.com/rajveermalviya/go-webgpu/wgpu v0.1.2
+	github.com/rajveermalviya/go-webgpu/wgpu v0.1.3
 )
 
 require (
