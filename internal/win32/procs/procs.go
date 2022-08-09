@@ -270,21 +270,15 @@ func GetWindowLong(hWnd, nIndex uintptr) uintptr {
 	panic("unsupported GOARCH: " + runtime.GOARCH)
 }
 
-func SetWindowLong(hWnd, nIndex, dwNewLong uintptr) (uintptr, error) {
+func SetWindowLong(hWnd, nIndex, dwNewLong uintptr) uintptr {
 	switch runtime.GOARCH {
 	case "amd64", "arm64":
-		r, _, err := _SetWindowLongPtrW.Call(hWnd, nIndex, dwNewLong)
-		if r == 0 {
-			return 0, err
-		}
-		return r, nil
+		r, _, _ := _SetWindowLongPtrW.Call(hWnd, nIndex, dwNewLong)
+		return r
 
 	case "386", "arm":
-		r, _, err := _SetWindowLongW.Call(hWnd, nIndex, dwNewLong)
-		if r == 0 {
-			return 0, err
-		}
-		return r, nil
+		r, _, _ := _SetWindowLongW.Call(hWnd, nIndex, dwNewLong)
+		return r
 	}
 
 	panic("unsupported GOARCH: " + runtime.GOARCH)
@@ -643,17 +637,16 @@ func GetClientRect(hWnd, lpRect uintptr) bool {
 
 func AdjustWindowRectEx(hwnd, style, styleEx, rect uintptr) bool {
 	menu, _, _ := _GetMenu.Call(hwnd)
-	var bMenu uintptr
 	if menu != 0 {
-		bMenu = 1
+		menu = 1
 	}
 
 	if _GetDpiForWindow.Find() == nil && _AdjustWindowRectExForDpi.Find() == nil {
 		dpi, _, _ := _GetDpiForWindow.Call(hwnd)
-		r, _, _ := _AdjustWindowRectExForDpi.Call(rect, style, bMenu, styleEx, dpi)
+		r, _, _ := _AdjustWindowRectExForDpi.Call(rect, style, menu, styleEx, dpi)
 		return r != 0
 	} else {
-		r, _, _ := _AdjustWindowRectEx.Call(rect, style, bMenu, styleEx)
+		r, _, _ := _AdjustWindowRectEx.Call(rect, style, menu, styleEx)
 		return r != 0
 	}
 }
