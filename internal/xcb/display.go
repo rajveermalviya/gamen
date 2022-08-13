@@ -59,8 +59,10 @@ type Display struct {
 	scrollingDevices map[C.xcb_input_device_id_t]scrollingDevice
 	cursors          map[cursors.Icon]C.xcb_cursor_t
 
-	focus     C.xcb_window_t
-	modifiers events.ModifiersState
+	focus              C.xcb_window_t
+	modifiers          events.ModifiersState
+	lastMousePositionX C.xcb_input_fp1616_t
+	lastMousePositionY C.xcb_input_fp1616_t
 
 	// atoms
 	wmProtocols             C.xcb_atom_t
@@ -71,6 +73,7 @@ type Display struct {
 	netWmStateMaximizedHorz C.xcb_atom_t
 	netWmStateMaximizedVert C.xcb_atom_t
 	netWmStateFullscreen    C.xcb_atom_t
+	netWmMoveResize         C.xcb_atom_t
 	relHorizWheel           C.xcb_atom_t
 	relVertWheel            C.xcb_atom_t
 	relHorizScroll          C.xcb_atom_t
@@ -163,6 +166,7 @@ func NewDisplay() (*Display, error) {
 		d.netWmStateMaximizedHorz = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_HORZ")
 		d.netWmStateMaximizedVert = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_VERT")
 		d.netWmStateFullscreen = internAtom(d.xcbConn, false, "_NET_WM_STATE_FULLSCREEN")
+		d.netWmMoveResize = internAtom(d.xcbConn, false, "_NET_WM_MOVERESIZE")
 
 		d.relHorizWheel = internAtom(d.xcbConn, false, "Rel Horiz Wheel")
 		d.relVertWheel = internAtom(d.xcbConn, false, "Rel Vert Wheel")
@@ -580,6 +584,11 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 	case C.XCB_INPUT_BUTTON_PRESS, C.XCB_INPUT_BUTTON_RELEASE:
 		ev := (*C.xcb_input_button_press_event_t)(unsafe.Pointer(e))
 
+		d.mu.Lock()
+		d.lastMousePositionX = ev.event_x
+		d.lastMousePositionY = ev.event_y
+		d.mu.Unlock()
+
 		// ignore emulated touch & mouse wheel events
 		if ev.flags&C.XCB_INPUT_POINTER_EVENT_FLAGS_POINTER_EMULATED != 0 {
 			return
@@ -645,6 +654,11 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 
 	case C.XCB_INPUT_MOTION:
 		ev := (*C.xcb_input_motion_event_t)(unsafe.Pointer(e))
+
+		d.mu.Lock()
+		d.lastMousePositionX = ev.event_x
+		d.lastMousePositionY = ev.event_y
+		d.mu.Unlock()
 
 		w, ok := d.windows[ev.event]
 		if ok {

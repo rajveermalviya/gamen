@@ -250,6 +250,7 @@ func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, s
 	}
 
 	d.pointer.mu.Lock()
+	d.pointer.serial = uint32(serial)
 	focus := d.pointer.focus
 	d.pointer.mu.Unlock()
 

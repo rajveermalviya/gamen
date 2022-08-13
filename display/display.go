@@ -113,6 +113,12 @@ type Window interface {
 	// Unsupported backends: android
 	Fullscreen() bool
 
+	// DragWindow starts an interactive move of window.
+	// Window follows the mouse cursor until mouse button is released.
+	//
+	// Unsupported backends: android, web
+	DragWindow()
+
 	// Callbacks
 
 	// SetResizedCallback registers a callback to receive resize events for the window

@@ -158,6 +158,7 @@ func (*Window) SetMaxInnerSize(size dpi.Size[uint32]) {}
 func (*Window) Maximized() bool                       { return false }
 func (*Window) SetMinimized()                         {}
 func (*Window) SetMaximized(maximized bool)           {}
+func (*Window) DragWindow()                           {}
 
 func (w *Window) addListener(eventName string, f func(event js.Value)) {
 	listener := js.FuncOf(func(this js.Value, args []js.Value) any {

@@ -514,6 +514,58 @@ func (w *Window) Fullscreen() bool {
 	return false
 }
 
+func (w *Window) DragWindow() {
+	const _NET_WM_MOVERESIZE_MOVE = 8
+
+	w.d.mu.Lock()
+	mousePosX := w.d.lastMousePositionX
+	mousePosY := w.d.lastMousePositionY
+	w.d.mu.Unlock()
+
+	r := C.xcb_translate_coordinates_reply(
+		w.d.xcbConn,
+		C.xcb_translate_coordinates(
+			w.d.xcbConn,
+			w.win,
+			w.d.screens[0].xcbScreen.root,
+			C.int16_t(fixed1616ToFloat64(mousePosX)),
+			C.int16_t(fixed1616ToFloat64(mousePosY)),
+		),
+		nil,
+	)
+
+	var posX, posY C.int16_t
+	if r != nil {
+		defer C.free(unsafe.Pointer(r))
+
+		posX = r.dst_x
+		posY = r.dst_y
+	}
+
+	event := C.xcb_client_message_event_t{
+		response_type: C.XCB_CLIENT_MESSAGE,
+		format:        32,
+		sequence:      0,
+		window:        w.win,
+		_type:         w.d.netWmMoveResize,
+	}
+
+	data := (*[5]uint32)(unsafe.Pointer(&event.data))
+	data[0] = uint32(posX)
+	data[1] = uint32(posY)
+	data[2] = _NET_WM_MOVERESIZE_MOVE
+	data[3] = C.XCB_BUTTON_INDEX_1
+
+	C.xcb_ungrab_pointer(w.d.xcbConn, C.XCB_CURRENT_TIME)
+	C.xcb_send_event(
+		w.d.xcbConn,
+		0,
+		w.d.screens[0].xcbScreen.root,
+		C.XCB_EVENT_MASK_STRUCTURE_NOTIFY|C.XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT,
+		(*C.char)(unsafe.Pointer(&event)),
+	)
+}
+
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
 	w.mu.Lock()
 	w.closeRequestedCb = cb

@@ -343,6 +343,14 @@ func (w *Window) Fullscreen() bool {
 	return w.fullscreen
 }
 
+func (w *Window) DragWindow() {
+	w.d.pointer.mu.Lock()
+	serial := w.d.pointer.serial
+	w.d.pointer.mu.Unlock()
+
+	C.xdg_toplevel_move(w.xdgToplevel, w.d.seat, C.uint32_t(serial))
+}
+
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
 	w.mu.Lock()
 	w.closeRequestedCb = cb

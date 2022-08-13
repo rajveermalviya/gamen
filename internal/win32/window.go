@@ -288,6 +288,23 @@ func (w *Window) Fullscreen() bool {
 	return true
 }
 
+func (w *Window) DragWindow() {
+	var pos procs.POINT
+	procs.GetCursorPos(uintptr(unsafe.Pointer(&pos)))
+
+	points := procs.POINTS{
+		X: int16(pos.X),
+		Y: int16(pos.Y),
+	}
+	procs.ReleaseCapture()
+	procs.PostMessageW(
+		w.hwnd,
+		procs.WM_NCLBUTTONDOWN,
+		procs.HTCAPTION,
+		uintptr(unsafe.Pointer(&points)),
+	)
+}
+
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
 	w.mu.Lock()
 	w.closeRequestedCb = cb
