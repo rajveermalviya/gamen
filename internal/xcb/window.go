@@ -135,6 +135,8 @@ func NewWindow(d *Display) (*Window, error) {
 		}
 	}
 
+	setDecorations(d.xcbConn, win, d.motifWmHints, true)
+
 	// map window
 	{
 		cookie := C.xcb_map_window_checked(d.xcbConn, win)
@@ -564,6 +566,75 @@ func (w *Window) DragWindow() {
 		C.XCB_EVENT_MASK_STRUCTURE_NOTIFY|C.XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT,
 		(*C.char)(unsafe.Pointer(&event)),
 	)
+}
+
+func setDecorations(conn *C.struct_xcb_connection_t, win C.xcb_window_t, motifWmHints C.xcb_atom_t, decorate bool) {
+	var hints struct {
+		flags       uint32
+		functions   uint32
+		decorations uint32
+		inputMode   int32
+		status      uint32
+	}
+
+	hints.flags = 2 // MWM_HINTS_DECORATIONS
+	if decorate {
+		hints.decorations = 1
+	} else {
+		hints.decorations = 0
+	}
+
+	C.xcb_change_property(
+		conn,
+		C.XCB_PROP_MODE_REPLACE,
+		win,
+		motifWmHints,
+		motifWmHints,
+		32,
+		5,
+		unsafe.Pointer(&hints),
+	)
+}
+
+func (w *Window) SetDecorations(decorate bool) {
+	setDecorations(w.d.xcbConn, w.win, w.d.motifWmHints, decorate)
+}
+
+func (w *Window) Decorated() bool {
+	type wmHints struct {
+		flags       uint32
+		functions   uint32
+		decorations uint32
+		inputMode   int32
+		status      uint32
+	}
+
+	r := C.xcb_get_property_reply(
+		w.d.xcbConn,
+		C.xcb_get_property(
+			w.d.xcbConn,
+			0,
+			w.win,
+			w.d.motifWmHints,
+			w.d.motifWmHints,
+			0,
+			C.uint32_t(unsafe.Sizeof(wmHints{})),
+		),
+		nil,
+	)
+	defer C.free(unsafe.Pointer(r))
+
+	var hints wmHints
+	if C.xcb_get_property_value_length(r) == C.int(unsafe.Sizeof(wmHints{})) {
+		if v := (*wmHints)(C.xcb_get_property_value(r)); v != nil {
+			hints = *v
+		}
+	}
+
+	if hints.decorations == 0 {
+		return false
+	}
+	return true
 }
 
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {

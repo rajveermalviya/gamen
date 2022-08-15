@@ -23,6 +23,10 @@ func setXiMask(mask *[8]C.uint8_t, bit C.int) {
 	mask[bit>>3] |= 1 << (bit & 7)
 }
 
+func hasXiMask(mask []C.uint32_t, bit C.uint16_t) bool {
+	return mask[bit>>3]&(1<<(bit&7)) != 0
+}
+
 func checkXInputVersion(conn *C.xcb_connection_t) error {
 	cookie := C.xcb_input_xi_query_version(conn, C.XCB_INPUT_MAJOR_VERSION, C.XCB_INPUT_MINOR_VERSION)
 	reply := C.xcb_input_xi_query_version_reply(conn, cookie, nil)

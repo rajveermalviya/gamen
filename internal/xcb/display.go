@@ -74,6 +74,7 @@ type Display struct {
 	netWmStateMaximizedVert C.xcb_atom_t
 	netWmStateFullscreen    C.xcb_atom_t
 	netWmMoveResize         C.xcb_atom_t
+	motifWmHints            C.xcb_atom_t
 	relHorizWheel           C.xcb_atom_t
 	relVertWheel            C.xcb_atom_t
 	relHorizScroll          C.xcb_atom_t
@@ -162,11 +163,14 @@ func NewDisplay() (*Display, error) {
 		d.wmDeleteWindow = internAtom(d.xcbConn, false, "WM_DELETE_WINDOW")
 		d.wmState = internAtom(d.xcbConn, false, "WM_STATE")
 		d.wmChangeState = internAtom(d.xcbConn, false, "WM_CHANGE_STATE")
+
 		d.netWmState = internAtom(d.xcbConn, false, "_NET_WM_STATE")
 		d.netWmStateMaximizedHorz = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_HORZ")
 		d.netWmStateMaximizedVert = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_VERT")
 		d.netWmStateFullscreen = internAtom(d.xcbConn, false, "_NET_WM_STATE_FULLSCREEN")
 		d.netWmMoveResize = internAtom(d.xcbConn, false, "_NET_WM_MOVERESIZE")
+
+		d.motifWmHints = internAtom(d.xcbConn, false, "_MOTIF_WM_HINTS")
 
 		d.relHorizWheel = internAtom(d.xcbConn, false, "Rel Horiz Wheel")
 		d.relVertWheel = internAtom(d.xcbConn, false, "Rel Vert Wheel")
@@ -701,8 +705,7 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 		axisValuesIndex := 0
 
 		for i := C.uint16_t(0); i < C.uint16_t(maskLen)*8; i++ {
-			// it's bitset 32
-			if (mask[i>>3] & (1 << (i & 7))) != 0 {
+			if hasXiMask(mask, i) {
 				if dev.horizontalScroll.index == i {
 					x := fixed3232ToFloat64(axisValues[axisValuesIndex])
 					axisValuesIndex++

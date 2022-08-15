@@ -1,7 +1,7 @@
 # gamen
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/rajveermalviya/gamen.svg)](https://pkg.go.dev/github.com/rajveermalviya/gamen)
-[![gamen Matrix](https://img.shields.io/static/v1?label&message=%23gamen&color=blueviolet&logo=matrix)](https://matrix.to/#gamen:matrix.org)
+[![gamen Matrix](https://img.shields.io/static/v1?label&message=%23gamen&color=blueviolet&logo=matrix)](https://matrix.to/#/#gamen:matrix.org)
 
 `gamen` is cross-platform windowing library in Go. It natively supports Windows, Linux, Android and Web. on Linux both X11 (via xcb) and Wayland are supported.
 
@@ -136,7 +136,7 @@ Note: for macos/ios support see [#1](https://github.com/rajveermalviya/gamen/iss
 
 ## contact
 
-join [matrix room](https://matrix.to/#gamen:matrix.org)
+join [matrix room](https://matrix.to/#/#gamen:matrix.org)
 
 ## thanks
 
