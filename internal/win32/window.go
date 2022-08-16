@@ -55,6 +55,24 @@ type Window struct {
 
 var windowClassName = must(windows.UTF16PtrFromString("Window Class"))
 
+const decoratedWindowStyles = procs.WS_OVERLAPPED |
+	procs.WS_SYSMENU |
+	procs.WS_CAPTION |
+	procs.WS_SIZEBOX
+
+const decoratedWindowExStyles = procs.WS_EX_WINDOWEDGE
+
+const defaultStyles = procs.WS_VISIBLE | // visible
+	procs.WS_CLIPSIBLINGS | // clip window behind
+	procs.WS_CLIPCHILDREN | // clip window behind
+	procs.WS_MAXIMIZEBOX |
+	procs.WS_MINIMIZEBOX |
+	decoratedWindowStyles
+
+const defaultExStyles = procs.WS_EX_LEFT |
+	procs.WS_EX_APPWINDOW |
+	decoratedWindowExStyles
+
 func NewWindow(d *Display) (*Window, error) {
 	class := procs.WNDCLASSEXW{
 		CbSize:        uint32(unsafe.Sizeof(procs.WNDCLASSEXW{})),
@@ -82,21 +100,10 @@ func NewWindow(d *Display) (*Window, error) {
 	}
 
 	hwnd := procs.CreateWindowExW(
-		procs.WS_EX_LEFT|
-			procs.WS_EX_WINDOWEDGE|
-			procs.WS_EX_APPWINDOW,
+		defaultExStyles,
 		uintptr(unsafe.Pointer(windowClassName)),
 		0,
-		procs.WS_OVERLAPPED| // show title & border
-			procs.WS_SIZEBOX| // sizing border
-			procs.WS_MAXIMIZEBOX| // maximize button
-			procs.WS_CAPTION| // title bar
-			procs.WS_MINIMIZEBOX| // minimize button
-			procs.WS_BORDER| // thin border
-			procs.WS_VISIBLE| // visible
-			procs.WS_CLIPSIBLINGS| // clip window behind
-			procs.WS_CLIPCHILDREN| // clip window behind
-			procs.WS_SYSMENU, // window menu
+		defaultStyles,
 		procs.CW_USEDEFAULT,
 		procs.CW_USEDEFAULT,
 		procs.CW_USEDEFAULT,
@@ -239,6 +246,7 @@ func (w *Window) SetCursorVisible(visible bool) {
 
 func (w *Window) SetFullscreen(fullscreen bool) {
 	dwStyle := procs.GetWindowLong(w.hwnd, procs.GWL_STYLE)
+	dwExStyle := procs.GetWindowLong(w.hwnd, procs.GWL_EXSTYLE)
 
 	if fullscreen {
 		mi := procs.MONITORINFO{
@@ -253,7 +261,8 @@ func (w *Window) SetFullscreen(fullscreen bool) {
 			w.wpPrev = wp
 			w.mu.Unlock()
 
-			procs.SetWindowLong(w.hwnd, procs.GWL_STYLE, dwStyle&^procs.WS_OVERLAPPEDWINDOW)
+			procs.SetWindowLong(w.hwnd, procs.GWL_STYLE, dwStyle&^decoratedWindowStyles)
+			procs.SetWindowLong(w.hwnd, procs.GWL_EXSTYLE, dwExStyle&^decoratedWindowExStyles)
 			procs.SetWindowPos(
 				w.hwnd, procs.HWND_TOP,
 				uintptr(mi.RcMonitor.Left), uintptr(mi.RcMonitor.Top),
@@ -267,22 +276,34 @@ func (w *Window) SetFullscreen(fullscreen bool) {
 		wp := w.wpPrev
 		w.mu.Unlock()
 
-		procs.SetWindowLong(w.hwnd, procs.GWL_STYLE, dwStyle|procs.WS_OVERLAPPEDWINDOW)
+		procs.SetWindowLong(w.hwnd, procs.GWL_STYLE, dwStyle|decoratedWindowStyles)
+		procs.SetWindowLong(w.hwnd, procs.GWL_EXSTYLE, dwExStyle|decoratedWindowExStyles)
 		procs.SetWindowPlacement(w.hwnd, uintptr(unsafe.Pointer(&wp)))
 		procs.SetWindowPos(
 			w.hwnd, 0,
 			0, 0,
 			0, 0,
-			procs.SWP_NOMOVE|procs.SWP_NOSIZE|
-				procs.SWP_NOZORDER|procs.SWP_NOOWNERZORDER|
+			procs.SWP_NOMOVE|
+				procs.SWP_NOSIZE|
+				procs.SWP_NOZORDER|
+				procs.SWP_NOOWNERZORDER|
 				procs.SWP_FRAMECHANGED,
 		)
 	}
 }
 
 func (w *Window) Fullscreen() bool {
-	dwStyle := procs.GetWindowLong(w.hwnd, procs.GWL_STYLE)
-	if dwStyle&procs.WS_OVERLAPPEDWINDOW != 0 {
+	windowSize := w.InnerSize()
+
+	monitor := procs.MonitorFromWindow(w.hwnd, procs.MONITOR_DEFAULTTOPRIMARY)
+	mi := procs.MONITORINFO{CbSize: uint32(unsafe.Sizeof(procs.MONITORINFO{}))}
+	procs.GetMonitorInfoW(monitor, uintptr(unsafe.Pointer(&mi)))
+
+	if int32(windowSize.Width) != utils.Abs(mi.RcMonitor.Right-mi.RcMonitor.Left) ||
+		int32(windowSize.Height) != utils.Abs(mi.RcMonitor.Bottom-mi.RcMonitor.Top) {
+		return false
+	}
+	if w.Decorated() {
 		return false
 	}
 	return true
@@ -303,6 +324,43 @@ func (w *Window) DragWindow() {
 		procs.HTCAPTION,
 		uintptr(unsafe.Pointer(&points)),
 	)
+}
+
+func (w *Window) SetDecorations(decorate bool) {
+	dwStyle := procs.GetWindowLong(w.hwnd, procs.GWL_STYLE)
+	dwExStyle := procs.GetWindowLong(w.hwnd, procs.GWL_EXSTYLE)
+
+	if decorate {
+		dwStyle |= decoratedWindowStyles
+		dwExStyle |= decoratedWindowExStyles
+	} else {
+		dwStyle &^= decoratedWindowStyles
+		dwExStyle &^= decoratedWindowExStyles
+	}
+
+	procs.SetWindowLong(w.hwnd, procs.GWL_STYLE, dwStyle)
+	procs.SetWindowLong(w.hwnd, procs.GWL_EXSTYLE, dwExStyle)
+	procs.SetWindowPos(
+		w.hwnd, 0,
+		0, 0,
+		0, 0,
+		procs.SWP_NOMOVE|
+			procs.SWP_NOSIZE|
+			procs.SWP_NOZORDER|
+			procs.SWP_NOOWNERZORDER|
+			procs.SWP_FRAMECHANGED,
+	)
+}
+
+func (w *Window) Decorated() bool {
+	dwStyle := procs.GetWindowLong(w.hwnd, procs.GWL_STYLE)
+	dwExStyle := procs.GetWindowLong(w.hwnd, procs.GWL_EXSTYLE)
+
+	if dwStyle&decoratedWindowStyles != 0 &&
+		dwExStyle&decoratedWindowExStyles != 0 {
+		return true
+	}
+	return false
 }
 
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
@@ -420,7 +478,7 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 		}
 		w.mu.Unlock()
 
-		if resizedCb != nil {
+		if resizedCb != nil && size.Width != 0 && size.Height != 0 {
 			resizedCb(size.Width, size.Height, 1)
 		}
 		return 0
@@ -432,9 +490,7 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 		minSize := w.minSize
 		w.mu.Unlock()
 
-		var zero dpi.PhysicalSize[uint32]
-
-		if minSize != zero {
+		if minSize.Width != 0 && minSize.Height != 0 {
 			rect := &procs.RECT{
 				Top:    0,
 				Left:   0,
@@ -458,7 +514,7 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 		maxSize := w.maxSize
 		w.mu.Unlock()
 
-		if maxSize != zero {
+		if maxSize.Width != 0 && maxSize.Height != 0 {
 			rect := &procs.RECT{
 				Top:    0,
 				Left:   0,
