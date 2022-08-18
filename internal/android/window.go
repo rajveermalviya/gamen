@@ -63,12 +63,14 @@ func (*Window) SetMinInnerSize(dpi.Size[uint32]) {}
 func (*Window) SetMaxInnerSize(dpi.Size[uint32]) {}
 func (*Window) Maximized() bool                  { return false }
 func (*Window) SetMinimized()                    {}
-func (*Window) SetMaximized(maximized bool)      {}
+func (*Window) SetMaximized(bool)                {}
 func (*Window) SetCursorIcon(cursors.Icon)       {}
-func (*Window) SetCursorVisible(visible bool)    {}
-func (*Window) SetFullscreen(fullscreen bool)    {}
+func (*Window) SetCursorVisible(bool)            {}
+func (*Window) SetFullscreen(bool)               {}
 func (*Window) Fullscreen() bool                 { return false }
 func (*Window) DragWindow()                      {}
+func (*Window) SetDecorations(bool)              {}
+func (*Window) Decorated() bool                  { return false }
 
 func (w *Window) SetSurfaceCreatedCallback(cb events.WindowSurfaceCreatedCallback) {
 	cbMut.Lock()

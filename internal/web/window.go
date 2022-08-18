@@ -153,12 +153,14 @@ func (w *Window) Fullscreen() bool {
 	return false
 }
 
-func (*Window) SetMinInnerSize(size dpi.Size[uint32]) {}
-func (*Window) SetMaxInnerSize(size dpi.Size[uint32]) {}
-func (*Window) Maximized() bool                       { return false }
-func (*Window) SetMinimized()                         {}
-func (*Window) SetMaximized(maximized bool)           {}
-func (*Window) DragWindow()                           {}
+func (*Window) SetMinInnerSize(dpi.Size[uint32]) {}
+func (*Window) SetMaxInnerSize(dpi.Size[uint32]) {}
+func (*Window) Maximized() bool                  { return false }
+func (*Window) SetMinimized()                    {}
+func (*Window) SetMaximized(bool)                {}
+func (*Window) DragWindow()                      {}
+func (*Window) SetDecorations(bool)              {}
+func (*Window) Decorated() bool                  { return false }
 
 func (w *Window) addListener(eventName string, f func(event js.Value)) {
 	listener := js.FuncOf(func(this js.Value, args []js.Value) any {
