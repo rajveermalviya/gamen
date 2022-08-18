@@ -75,7 +75,6 @@ func NewWindow(d *Display) (*Window, error) {
 		outputs:           make(map[*C.struct_wl_output]struct{}),
 		scaleFactor:       1,
 		currentCursorIcon: "left_ptr",
-		maximized:         false,
 	}
 	handle := cgo.NewHandle(w)
 	w.handle = &handle
@@ -94,6 +93,8 @@ func NewWindow(d *Display) (*Window, error) {
 		C.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
 		C.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
 	}
+
+	C.wl_surface_commit(w.surface)
 
 	d.windows[w.surface] = w
 
@@ -349,6 +350,33 @@ func (w *Window) DragWindow() {
 	w.d.pointer.mu.Unlock()
 
 	C.xdg_toplevel_move(w.xdgToplevel, w.d.seat, C.uint32_t(serial))
+}
+
+func (w *Window) SetDecorations(decorate bool) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if decorate {
+		if w.d.xdgDecorationManager != nil && w.xdgToplevelDecoration == nil {
+			w.xdgToplevelDecoration = C.zxdg_decoration_manager_v1_get_toplevel_decoration(w.d.xdgDecorationManager, w.xdgToplevel)
+			C.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
+			C.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+			C.wl_surface_commit(w.surface)
+		}
+	} else {
+		if w.d.xdgDecorationManager != nil && w.xdgToplevelDecoration != nil {
+			C.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE)
+			C.zxdg_toplevel_decoration_v1_destroy(w.xdgToplevelDecoration)
+			w.xdgToplevelDecoration = nil
+			C.wl_surface_commit(w.surface)
+		}
+	}
+}
+
+func (w *Window) Decorated() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.xdgToplevelDecoration != nil
 }
 
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
