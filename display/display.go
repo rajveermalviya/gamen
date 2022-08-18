@@ -91,7 +91,7 @@ type Window interface {
 	// SetMinimized maximizes or un-maximizes the window
 	//
 	// Unsupported backends: android, web
-	SetMaximized(maximized bool)
+	SetMaximized(bool)
 
 	// SetCursorIcon changes the cursor icon for this window
 	//
@@ -101,12 +101,12 @@ type Window interface {
 	// SetCursorVisible hides or un-hides the cursor for this window
 	//
 	// Unsupported backends: android
-	SetCursorVisible(visible bool)
+	SetCursorVisible(bool)
 
 	// SetFullscreen sets window to fullscreen or normal mode
 	//
 	// Unsupported backends: android
-	SetFullscreen(fullscreen bool)
+	SetFullscreen(bool)
 
 	// Fullscreen returns if window is currently in fullscreen mode
 	//
@@ -118,6 +118,16 @@ type Window interface {
 	//
 	// Unsupported backends: android, web
 	DragWindow()
+
+	// SetDecorations enables or disables window decorations
+	//
+	// Unsupported backends: android, web
+	SetDecorations(bool)
+
+	// Decorated returns if window currently has decorations
+	//
+	// Unsupported backends: android, web
+	Decorated() bool
 
 	// Callbacks
 
