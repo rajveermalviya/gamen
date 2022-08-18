@@ -102,7 +102,7 @@ an incomplete list of features in no particular order that are supported or that
 | handles for OpenGL init        | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | handles for Vulkan WSI         | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 | show window with decorations   | :heavy_check_mark: | :heavy_check_mark: | :exclamation: [#2] | :heavy_check_mark: | **N/A**            |
-| window decorations toggle      | :heavy_check_mark: | :heavy_check_mark: | :x:                | :x:                | **N/A**            |
+| window decorations toggle      | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :x:                | **N/A**            |
 | window resizing events         | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            |
 | resize window programmatically | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: | **N/A**            | **N/A**            |
 | window transparency            | :x:                | :x:                | :x:                | :x:                | :x:                |
