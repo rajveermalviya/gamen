@@ -21,29 +21,44 @@ jobs:
               sudo apt install libwayland-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb-randr0-dev libxcb-xinput-dev libxcb-icccm4-dev libxcursor-dev libxcb-image0-dev
 
             goos: linux
-            build_cmd: go build
+            build_cmd: |
+              set -x;
+              go build -o out ./examples/hello
+              file out
 
           - name: Test build on windows for windows
             os: windows-2022
             goos: windows
-            build_cmd: go build
+            build_cmd: |
+              set -x;
+              go build -o out ./examples/hello
+              file out
 
           - name: Test build on linux for windows
             os: ubuntu-22.04
             goos: windows
-            build_cmd: GOOS=windows go build
+            build_cmd: |
+              set -x;
+              GOOS=windows go build -o out ./examples/hello
+              file out
 
           - name: Test build on linux for web
             os: ubuntu-22.04
             goos: js
-            build_cmd: GOOS=js GOARCH=wasm go build
+            build_cmd: |
+              set -x;
+              GOOS=js GOARCH=wasm go build -o out ./examples/hello
+              file out
 
           - name: Test build on linux for android
             os: ubuntu-22.04
             goos: android
             setup_env: |
               go install github.com/rajveermalviya/tsukuru/cmd/tsukuru@latest
-            build_cmd: tsukuru build apk
+            build_cmd: |
+              set -x;
+              tsukuru build apk ./examples/hello
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -56,8 +71,4 @@ jobs:
         shell: bash
       - name: Run build tests
         shell: bash
-        run: |
-          set -x;
-          cd examples/hello
-          ${{ matrix.build_cmd }} -o out .
-          file out
+        run: ${{ matrix.build_cmd }}
