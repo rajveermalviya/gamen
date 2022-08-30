@@ -15,7 +15,7 @@ import (
 	"unsafe"
 
 	"github.com/rajveermalviya/gamen/cursors"
-	"github.com/rajveermalviya/gamen/internal/common"
+	"github.com/rajveermalviya/gamen/internal/common/xcursor"
 )
 
 func createEmptyCursor(xconn *C.xcb_connection_t, root C.xcb_window_t) C.xcb_cursor_t {
@@ -75,7 +75,7 @@ func (d *Display) loadCursorIcon(icon cursors.Icon) C.xcb_cursor_t {
 		return c
 	}
 
-	for _, name := range common.ToXcursorName(icon) {
+	for _, name := range xcursor.ToXcursorName(icon) {
 		c = loadCursor(d.xlibDisp, name)
 		if c != 0 {
 			break

@@ -26,8 +26,8 @@ import (
 	"github.com/rajveermalviya/gamen/cursors"
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
-	"github.com/rajveermalviya/gamen/internal/common"
-	"github.com/rajveermalviya/gamen/internal/utils"
+	"github.com/rajveermalviya/gamen/internal/common/mathx"
+	"github.com/rajveermalviya/gamen/internal/common/xcursor"
 )
 
 type Window struct {
@@ -181,8 +181,8 @@ func (w *Window) SetInnerSize(size dpi.Size[uint32]) {
 	physicalSize := size.ToPhysical(scaleFactor)
 	logicalSize := size.ToLogical(scaleFactor)
 
-	width := utils.Max(1, physicalSize.Width)
-	height := utils.Max(1, physicalSize.Height)
+	width := mathx.Max(1, physicalSize.Width)
+	height := mathx.Max(1, physicalSize.Height)
 
 	w.size = logicalSize
 
@@ -250,7 +250,7 @@ func (w *Window) SetCursorIcon(icon cursors.Icon) {
 
 	var cursor *C.struct_wl_cursor
 	var name string
-	for _, n := range common.ToXcursorName(icon) {
+	for _, n := range xcursor.ToXcursorName(icon) {
 		name = n
 		cursor = w.d.pointer.loadCursor(n, 24, w.scaleFactor)
 		if cursor != nil {

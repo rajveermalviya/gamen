@@ -11,7 +11,7 @@ import (
 	"github.com/rajveermalviya/gamen/cursors"
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
-	"github.com/rajveermalviya/gamen/internal/utils"
+	"github.com/rajveermalviya/gamen/internal/common/mathx"
 	"github.com/rajveermalviya/gamen/internal/win32/procs"
 	"golang.org/x/sys/windows"
 )
@@ -179,8 +179,8 @@ func (w *Window) SetInnerSize(size dpi.Size[uint32]) {
 		panic("AdjustWindowRectEx failed")
 	}
 
-	outerX := utils.Abs(rect.Right - rect.Left)
-	outerY := utils.Abs(rect.Top - rect.Bottom)
+	outerX := mathx.Abs(rect.Right - rect.Left)
+	outerY := mathx.Abs(rect.Top - rect.Bottom)
 
 	procs.SetWindowPos(
 		w.hwnd,
@@ -299,8 +299,8 @@ func (w *Window) Fullscreen() bool {
 	mi := procs.MONITORINFO{CbSize: uint32(unsafe.Sizeof(procs.MONITORINFO{}))}
 	procs.GetMonitorInfoW(monitor, uintptr(unsafe.Pointer(&mi)))
 
-	if int32(windowSize.Width) != utils.Abs(mi.RcMonitor.Right-mi.RcMonitor.Left) ||
-		int32(windowSize.Height) != utils.Abs(mi.RcMonitor.Bottom-mi.RcMonitor.Top) {
+	if int32(windowSize.Width) != mathx.Abs(mi.RcMonitor.Right-mi.RcMonitor.Left) ||
+		int32(windowSize.Height) != mathx.Abs(mi.RcMonitor.Bottom-mi.RcMonitor.Top) {
 		return false
 	}
 	if w.Decorated() {
@@ -658,7 +658,7 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 		return 0
 
 	case procs.WM_LBUTTONUP:
-		w.cursorCaptureCount = utils.Max(0, w.cursorCaptureCount-1)
+		w.cursorCaptureCount = mathx.Max(0, w.cursorCaptureCount-1)
 		if w.cursorCaptureCount == 0 {
 			procs.ReleaseCapture()
 		}
@@ -698,7 +698,7 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 		return 0
 
 	case procs.WM_RBUTTONUP:
-		w.cursorCaptureCount = utils.Max(0, w.cursorCaptureCount-1)
+		w.cursorCaptureCount = mathx.Max(0, w.cursorCaptureCount-1)
 		if w.cursorCaptureCount == 0 {
 			procs.ReleaseCapture()
 		}
@@ -738,7 +738,7 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 		return 0
 
 	case procs.WM_MBUTTONUP:
-		w.cursorCaptureCount = utils.Max(0, w.cursorCaptureCount-1)
+		w.cursorCaptureCount = mathx.Max(0, w.cursorCaptureCount-1)
 		if w.cursorCaptureCount == 0 {
 			procs.ReleaseCapture()
 		}
@@ -778,7 +778,7 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 		return 0
 
 	case procs.WM_XBUTTONUP:
-		w.cursorCaptureCount = utils.Max(0, w.cursorCaptureCount-1)
+		w.cursorCaptureCount = mathx.Max(0, w.cursorCaptureCount-1)
 		if w.cursorCaptureCount == 0 {
 			procs.ReleaseCapture()
 		}

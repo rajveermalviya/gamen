@@ -22,7 +22,7 @@ import (
 	"github.com/rajveermalviya/gamen/cursors"
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
-	"github.com/rajveermalviya/gamen/internal/utils"
+	"github.com/rajveermalviya/gamen/internal/common/mathx"
 )
 
 type Window struct {
@@ -231,8 +231,8 @@ func (w *Window) SetInnerSize(size dpi.Size[uint32]) {
 
 	var mask C.uint16_t = C.XCB_CONFIG_WINDOW_WIDTH | C.XCB_CONFIG_WINDOW_HEIGHT
 	values := [...]uint32{
-		utils.Max(1, utils.Min(physicalSize.Width, math.MaxInt16)),
-		utils.Max(1, utils.Min(physicalSize.Height, math.MaxInt16)),
+		mathx.Max(1, mathx.Min(physicalSize.Width, math.MaxInt16)),
+		mathx.Max(1, mathx.Min(physicalSize.Height, math.MaxInt16)),
 	}
 
 	C.xcb_configure_window(w.d.xcbConn, w.win, mask, unsafe.Pointer(&values))
@@ -253,8 +253,8 @@ func (w *Window) SetMinInnerSize(size dpi.Size[uint32]) {
 
 	C.xcb_icccm_size_hints_set_min_size(
 		&hints,
-		C.int32_t(utils.Min(physicalSize.Width, math.MaxInt16)),
-		C.int32_t(utils.Min(physicalSize.Height, math.MaxInt16)),
+		C.int32_t(mathx.Min(physicalSize.Width, math.MaxInt16)),
+		C.int32_t(mathx.Min(physicalSize.Height, math.MaxInt16)),
 	)
 
 	C.xcb_icccm_set_wm_normal_hints(w.d.xcbConn, w.win, &hints)
@@ -274,8 +274,8 @@ func (w *Window) SetMaxInnerSize(size dpi.Size[uint32]) {
 
 	C.xcb_icccm_size_hints_set_max_size(
 		&hints,
-		C.int32_t(utils.Min(physicalSize.Width, math.MaxInt16)),
-		C.int32_t(utils.Min(physicalSize.Height, math.MaxInt16)),
+		C.int32_t(mathx.Min(physicalSize.Width, math.MaxInt16)),
+		C.int32_t(mathx.Min(physicalSize.Height, math.MaxInt16)),
 	)
 
 	C.xcb_icccm_set_wm_normal_hints(w.d.xcbConn, w.win, &hints)

@@ -1,6 +1,6 @@
 //go:build linux
 
-package common
+package xcursor
 
 import (
 	"strconv"
