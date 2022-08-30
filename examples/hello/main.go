@@ -80,11 +80,11 @@ func main() {
 	})
 
 	for {
-		// render here
-
 		if !d.Wait() {
 			break
 		}
+
+		// render here
 	}
 }
 

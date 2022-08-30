@@ -43,11 +43,11 @@ func main() {
 	w.SetCloseRequestedCallback(func() { d.Destroy() })
 
 	for {
-		// render here
-
 		if !d.Wait() {
 			break
 		}
+
+		// render here
 	}
 }
 
