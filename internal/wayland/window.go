@@ -186,13 +186,14 @@ func (w *Window) SetInnerSize(size dpi.Size[uint32]) {
 
 	w.size = logicalSize
 
-	var resizedCb events.WindowResizedCallback
-	if w.resizedCb != nil {
-		resizedCb = w.resizedCb
-	}
-
 	w.d.scheduleCallback(func() {
-		resizedCb(width, height, scaleFactor)
+		w.mu.Lock()
+		resizedCb := w.resizedCb
+		w.mu.Unlock()
+
+		if resizedCb != nil {
+			resizedCb(width, height, scaleFactor)
+		}
 	})
 }
 
@@ -550,15 +551,13 @@ func xdgToplevelHandleConfigure(data unsafe.Pointer, xdg_toplevel *C.struct_xdg_
 
 	w.mu.Unlock()
 
-	w.d.scheduleCallback(func() {
-		if resizedCb != nil {
-			resizedCb(
-				physicalSize.Width,
-				physicalSize.Height,
-				scaleFactor,
-			)
-		}
-	})
+	if resizedCb != nil {
+		resizedCb(
+			physicalSize.Width,
+			physicalSize.Height,
+			scaleFactor,
+		)
+	}
 }
 
 //export xdgToplevelHandleClose

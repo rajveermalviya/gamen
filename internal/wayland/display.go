@@ -31,6 +31,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/rajveermalviya/gamen/internal/common/mathx"
 	"github.com/rajveermalviya/gamen/internal/xkbcommon"
 	"golang.org/x/sys/unix"
 )
@@ -250,15 +251,19 @@ func (d *Display) WaitTimeout(timeout time.Duration) bool {
 // schedule's a callback to run on main eventqueue and main thread
 func (d *Display) scheduleCallback(fn func()) {
 	cb := C.wl_display_sync(d.display)
+	setCallbackListener(cb, func() {
+		C.wl_callback_destroy(cb)
+		fn()
+	})
+}
 
+func setCallbackListener(cb *C.struct_wl_callback, fn func()) {
 	fnHandle := cgo.NewHandle(fn)
 	C.wl_callback_add_listener(cb, &C.go_wl_callback_listener, unsafe.Pointer(&fnHandle))
 }
 
 //export goWlCallbackDone
 func goWlCallbackDone(data unsafe.Pointer, wl_callback *C.struct_wl_callback, callback_data C.uint32_t) {
-	defer C.wl_callback_destroy(wl_callback)
-
 	fnHandle := (*cgo.Handle)(data)
 	defer fnHandle.Delete()
 
@@ -279,16 +284,16 @@ func registryHandleGlobal(data unsafe.Pointer, wl_registry *C.struct_wl_registry
 
 	switch C.GoString(iface) {
 	case C.GoString(C.wl_compositor_interface.name):
-		d.compositor = (*C.struct_wl_compositor)(C.wl_registry_bind(wl_registry, name, &C.wl_compositor_interface, version))
+		d.compositor = (*C.struct_wl_compositor)(C.wl_registry_bind(wl_registry, name, &C.wl_compositor_interface, mathx.Min(5, version)))
 
 	case C.GoString(C.wl_shm_interface.name):
-		d.shm = (*C.struct_wl_shm)(C.wl_registry_bind(wl_registry, name, &C.wl_shm_interface, version))
+		d.shm = (*C.struct_wl_shm)(C.wl_registry_bind(wl_registry, name, &C.wl_shm_interface, mathx.Min(1, version)))
 
 	case C.GoString(C.zxdg_decoration_manager_v1_interface.name):
-		d.xdgDecorationManager = (*C.struct_zxdg_decoration_manager_v1)(C.wl_registry_bind(wl_registry, name, &C.zxdg_decoration_manager_v1_interface, version))
+		d.xdgDecorationManager = (*C.struct_zxdg_decoration_manager_v1)(C.wl_registry_bind(wl_registry, name, &C.zxdg_decoration_manager_v1_interface, mathx.Min(1, version)))
 
 	case C.GoString(C.wl_output_interface.name):
-		output := (*C.struct_wl_output)(C.wl_registry_bind(wl_registry, name, &C.wl_output_interface, version))
+		output := (*C.struct_wl_output)(C.wl_registry_bind(wl_registry, name, &C.wl_output_interface, mathx.Min(2, version)))
 		d.outputs[output] = &Output{
 			output:      output,
 			name:        uint32(name),
@@ -297,11 +302,11 @@ func registryHandleGlobal(data unsafe.Pointer, wl_registry *C.struct_wl_registry
 		C.wl_output_add_listener(output, &C.wl_output_listener, unsafe.Pointer(d.handle))
 
 	case C.GoString(C.xdg_wm_base_interface.name):
-		d.xdgWmBase = (*C.struct_xdg_wm_base)(C.wl_registry_bind(wl_registry, name, &C.xdg_wm_base_interface, version))
+		d.xdgWmBase = (*C.struct_xdg_wm_base)(C.wl_registry_bind(wl_registry, name, &C.xdg_wm_base_interface, mathx.Min(4, version)))
 		C.xdg_wm_base_add_listener(d.xdgWmBase, &C.xdg_wm_base_listener, nil)
 
 	case C.GoString(C.wl_seat_interface.name):
-		d.seat = (*C.struct_wl_seat)(C.wl_registry_bind(wl_registry, name, &C.wl_seat_interface, version))
+		d.seat = (*C.struct_wl_seat)(C.wl_registry_bind(wl_registry, name, &C.wl_seat_interface, mathx.Min(5, version)))
 		C.wl_seat_add_listener(d.seat, &C.wl_seat_listener, unsafe.Pointer(d.handle))
 	}
 }

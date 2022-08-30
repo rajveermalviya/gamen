@@ -8,12 +8,15 @@ package wayland
 #include <wayland-cursor.h>
 #include <stdlib.h>
 
+extern const struct wl_buffer_listener wl_buffer_listener;
+
 */
 import "C"
 
 import (
 	"runtime/cgo"
 	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/rajveermalviya/gamen/events"
@@ -34,12 +37,23 @@ type Pointer struct {
 	lineDeltaVertical   float64
 	lineDeltaHorizontal float64
 
-	currentCursor string
-	cursorThemes  map[uint32]*C.struct_wl_cursor_theme
-	cursorSurface *C.struct_wl_surface
+	currentCursor                   *C.struct_wl_cursor
+	currentCursorAnimationStartTime time.Time
+	cursorThemes                    map[uint32]*C.struct_wl_cursor_theme
+	cursorSurface                   *C.struct_wl_surface
+	cursorSurfaceFrameCallback      *C.struct_wl_callback
 }
 
 func (p *Pointer) destroy() {
+	if p.currentCursor != nil {
+		p.currentCursor = nil
+	}
+
+	if p.cursorSurfaceFrameCallback != nil {
+		C.wl_callback_destroy(p.cursorSurfaceFrameCallback)
+		p.cursorSurfaceFrameCallback = nil
+	}
+
 	if p.cursorSurface != nil {
 		C.wl_surface_destroy(p.cursorSurface)
 		p.cursorSurface = nil
@@ -84,7 +98,6 @@ func (p *Pointer) loadCursor(name string, size uint32, scaleFactor float64) *C.s
 	return cursor
 }
 
-// TODO: handle cursor animation
 func (p *Pointer) setCursor(cursor *C.struct_wl_cursor, name string, scaleFactor float64) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -92,8 +105,13 @@ func (p *Pointer) setCursor(cursor *C.struct_wl_cursor, name string, scaleFactor
 	// hide cursor
 	if cursor == nil {
 		C.wl_pointer_set_cursor(p.pointer, C.uint32_t(p.serial), nil, 0, 0)
-		p.currentCursor = ""
+		p.currentCursor = nil
 		return
+	}
+
+	if p.cursorSurfaceFrameCallback != nil {
+		C.wl_callback_destroy(p.cursorSurfaceFrameCallback)
+		p.cursorSurfaceFrameCallback = nil
 	}
 
 	imageSlice := unsafe.Slice(cursor.images, cursor.image_count)
@@ -116,7 +134,52 @@ func (p *Pointer) setCursor(cursor *C.struct_wl_cursor, name string, scaleFactor
 		C.int32_t(float64(image.hotspot_x)/scaleFactor),
 		C.int32_t(float64(image.hotspot_y)/scaleFactor),
 	)
-	p.currentCursor = name
+	p.currentCursor = cursor
+
+	if cursor.image_count > 1 {
+		p.currentCursorAnimationStartTime = time.Now()
+		p.startAnimatingCursor()
+	}
+}
+
+func (p *Pointer) startAnimatingCursor() {
+	var fn func()
+	fn = func() {
+		p.mu.Lock()
+		defer p.mu.Unlock()
+
+		if p.cursorSurfaceFrameCallback != nil {
+			C.wl_callback_destroy(p.cursorSurfaceFrameCallback)
+			p.cursorSurfaceFrameCallback = nil
+		}
+
+		if p.currentCursor == nil {
+			return
+		}
+
+		imageIdx := C.wl_cursor_frame_and_duration(
+			p.currentCursor,
+			C.uint32_t(p.currentCursorAnimationStartTime.UnixMilli()),
+			nil,
+		)
+
+		imageSlice := unsafe.Slice(p.currentCursor.images, p.currentCursor.image_count)
+		image := imageSlice[imageIdx]
+		cursorBuffer := C.wl_cursor_image_get_buffer(image)
+
+		C.wl_surface_attach(p.cursorSurface, cursorBuffer, 0, 0)
+		C.wl_surface_damage_buffer(p.cursorSurface, 0, 0, C.int32_t(image.width), C.int32_t(image.height))
+
+		p.cursorSurfaceFrameCallback = C.wl_surface_frame(p.cursorSurface)
+		setCallbackListener(p.cursorSurfaceFrameCallback, fn)
+		C.wl_surface_commit(p.cursorSurface)
+
+		p.currentCursorAnimationStartTime = time.Now()
+	}
+
+	p.cursorSurfaceFrameCallback = C.wl_surface_frame(p.cursorSurface)
+	setCallbackListener(p.cursorSurfaceFrameCallback, fn)
+	C.wl_surface_commit(p.cursorSurface)
 }
 
 //export pointerHandleEnter
