@@ -4,7 +4,7 @@ package wayland
 
 /*
 
-#include <wayland-client.h>
+#include "wayland-util.h"
 
 */
 import "C"
