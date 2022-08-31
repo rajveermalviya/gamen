@@ -4,11 +4,9 @@ package wayland
 
 /*
 
-#include <wayland-client.h>
-#include <wayland-cursor.h>
 #include <stdlib.h>
-
-extern const struct wl_buffer_listener wl_buffer_listener;
+#include "wayland-util.h"
+#include "wayland-cursor.h"
 
 */
 import "C"
@@ -50,24 +48,24 @@ func (p *Pointer) destroy() {
 	}
 
 	if p.cursorSurfaceFrameCallback != nil {
-		C.wl_callback_destroy(p.cursorSurfaceFrameCallback)
+		p.d.l.wl_callback_destroy(p.cursorSurfaceFrameCallback)
 		p.cursorSurfaceFrameCallback = nil
 	}
 
 	if p.cursorSurface != nil {
-		C.wl_surface_destroy(p.cursorSurface)
+		p.d.l.wl_surface_destroy(p.cursorSurface)
 		p.cursorSurface = nil
 	}
 
 	if p.cursorThemes != nil {
 		for _, theme := range p.cursorThemes {
-			C.wl_cursor_theme_destroy(theme)
+			p.d.l.wl_cursor_theme_destroy(theme)
 		}
 		p.cursorThemes = nil
 	}
 
 	if p.pointer != nil {
-		C.wl_pointer_destroy(p.pointer)
+		p.d.l.wl_pointer_destroy(p.pointer)
 		p.pointer = nil
 	}
 }
@@ -80,14 +78,14 @@ func (p *Pointer) loadCursor(name string, size uint32, scaleFactor float64) *C.s
 
 	theme, ok := p.cursorThemes[size]
 	if !ok {
-		theme = C.wl_cursor_theme_load(nil, C.int(size), p.d.shm)
+		theme = p.d.l.wl_cursor_theme_load(nil, C.int(size), p.d.shm)
 		p.cursorThemes[size] = theme
 	}
 
 	nameStr := C.CString(name)
 	defer C.free(unsafe.Pointer(nameStr))
 
-	cursor := C.wl_cursor_theme_get_cursor(theme, nameStr)
+	cursor := p.d.l.wl_cursor_theme_get_cursor(theme, nameStr)
 	if cursor == nil {
 		return nil
 	}
@@ -104,30 +102,30 @@ func (p *Pointer) setCursor(cursor *C.struct_wl_cursor, name string, scaleFactor
 
 	// hide cursor
 	if cursor == nil {
-		C.wl_pointer_set_cursor(p.pointer, C.uint32_t(p.serial), nil, 0, 0)
+		p.d.l.wl_pointer_set_cursor(p.pointer, C.uint32_t(p.serial), nil, 0, 0)
 		p.currentCursor = nil
 		return
 	}
 
 	if p.cursorSurfaceFrameCallback != nil {
-		C.wl_callback_destroy(p.cursorSurfaceFrameCallback)
+		p.d.l.wl_callback_destroy(p.cursorSurfaceFrameCallback)
 		p.cursorSurfaceFrameCallback = nil
 	}
 
 	imageSlice := unsafe.Slice(cursor.images, cursor.image_count)
 	image := imageSlice[0]
-	cursorBuffer := C.wl_cursor_image_get_buffer(image)
+	cursorBuffer := p.d.l.wl_cursor_image_get_buffer(image)
 
 	if p.cursorSurface == nil {
-		p.cursorSurface = C.wl_compositor_create_surface(p.d.compositor)
+		p.cursorSurface = p.d.l.wl_compositor_create_surface(p.d.compositor)
 	}
 
-	C.wl_surface_set_buffer_scale(p.cursorSurface, C.int32_t(scaleFactor))
-	C.wl_surface_attach(p.cursorSurface, cursorBuffer, 0, 0)
-	C.wl_surface_damage_buffer(p.cursorSurface, 0, 0, C.int32_t(image.width), C.int32_t(image.height))
-	C.wl_surface_commit(p.cursorSurface)
+	p.d.l.wl_surface_set_buffer_scale(p.cursorSurface, C.int32_t(scaleFactor))
+	p.d.l.wl_surface_attach(p.cursorSurface, cursorBuffer, 0, 0)
+	p.d.l.wl_surface_damage_buffer(p.cursorSurface, 0, 0, C.int32_t(image.width), C.int32_t(image.height))
+	p.d.l.wl_surface_commit(p.cursorSurface)
 
-	C.wl_pointer_set_cursor(
+	p.d.l.wl_pointer_set_cursor(
 		p.pointer,
 		C.uint32_t(p.serial),
 		p.cursorSurface,
@@ -149,7 +147,7 @@ func (p *Pointer) startAnimatingCursor() {
 		defer p.mu.Unlock()
 
 		if p.cursorSurfaceFrameCallback != nil {
-			C.wl_callback_destroy(p.cursorSurfaceFrameCallback)
+			p.d.l.wl_callback_destroy(p.cursorSurfaceFrameCallback)
 			p.cursorSurfaceFrameCallback = nil
 		}
 
@@ -157,7 +155,7 @@ func (p *Pointer) startAnimatingCursor() {
 			return
 		}
 
-		imageIdx := C.wl_cursor_frame_and_duration(
+		imageIdx := p.d.l.wl_cursor_frame_and_duration(
 			p.currentCursor,
 			C.uint32_t(p.currentCursorAnimationStartTime.UnixMilli()),
 			nil,
@@ -165,21 +163,21 @@ func (p *Pointer) startAnimatingCursor() {
 
 		imageSlice := unsafe.Slice(p.currentCursor.images, p.currentCursor.image_count)
 		image := imageSlice[imageIdx]
-		cursorBuffer := C.wl_cursor_image_get_buffer(image)
+		cursorBuffer := p.d.l.wl_cursor_image_get_buffer(image)
 
-		C.wl_surface_attach(p.cursorSurface, cursorBuffer, 0, 0)
-		C.wl_surface_damage_buffer(p.cursorSurface, 0, 0, C.int32_t(image.width), C.int32_t(image.height))
+		p.d.l.wl_surface_attach(p.cursorSurface, cursorBuffer, 0, 0)
+		p.d.l.wl_surface_damage_buffer(p.cursorSurface, 0, 0, C.int32_t(image.width), C.int32_t(image.height))
 
-		p.cursorSurfaceFrameCallback = C.wl_surface_frame(p.cursorSurface)
-		setCallbackListener(p.cursorSurfaceFrameCallback, fn)
-		C.wl_surface_commit(p.cursorSurface)
+		p.cursorSurfaceFrameCallback = p.d.l.wl_surface_frame(p.cursorSurface)
+		p.d.setCallbackListener(p.cursorSurfaceFrameCallback, fn)
+		p.d.l.wl_surface_commit(p.cursorSurface)
 
 		p.currentCursorAnimationStartTime = time.Now()
 	}
 
-	p.cursorSurfaceFrameCallback = C.wl_surface_frame(p.cursorSurface)
-	setCallbackListener(p.cursorSurfaceFrameCallback, fn)
-	C.wl_surface_commit(p.cursorSurface)
+	p.cursorSurfaceFrameCallback = p.d.l.wl_surface_frame(p.cursorSurface)
+	p.d.setCallbackListener(p.cursorSurfaceFrameCallback, fn)
+	p.d.l.wl_surface_commit(p.cursorSurface)
 }
 
 //export pointerHandleEnter
@@ -300,7 +298,7 @@ func pointerHandleMotion(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, t
 }
 
 //export pointerHandleButton
-func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, serial C.uint32_t, time C.uint32_t, button C.uint32_t, state C.uint32_t) {
+func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, serial C.uint32_t, time C.uint32_t, button C.uint32_t, state wl_pointer_button_state) {
 	const (
 		BTN_LEFT   = 272
 		BTN_RIGHT  = 273
@@ -336,9 +334,9 @@ func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, s
 	if mouseInputCb != nil {
 		var s events.ButtonState
 		switch state {
-		case C.WL_POINTER_BUTTON_STATE_PRESSED:
+		case WL_POINTER_BUTTON_STATE_PRESSED:
 			s = events.ButtonStatePressed
-		case C.WL_POINTER_BUTTON_STATE_RELEASED:
+		case WL_POINTER_BUTTON_STATE_RELEASED:
 			s = events.ButtonStateReleased
 		}
 
@@ -359,7 +357,7 @@ func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, s
 }
 
 //export pointerHandleAxis
-func pointerHandleAxis(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, time C.uint32_t, axis C.uint32_t, value C.double) {
+func pointerHandleAxis(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, time C.uint32_t, axis wl_pointer_axis, value C.double) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
 		return
@@ -367,16 +365,16 @@ func pointerHandleAxis(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, tim
 
 	// we call callbacks on frame event
 	switch axis {
-	case C.WL_POINTER_AXIS_VERTICAL_SCROLL:
+	case WL_POINTER_AXIS_VERTICAL_SCROLL:
 		d.pointer.pixelDeltaVertical -= float64(value)
 
-	case C.WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+	case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
 		d.pointer.pixelDeltaHorizontal -= float64(value)
 	}
 }
 
 //export pointerHandleAxisDiscrete
-func pointerHandleAxisDiscrete(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, axis C.uint32_t, discrete C.int32_t) {
+func pointerHandleAxisDiscrete(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, axis wl_pointer_axis, discrete C.int32_t) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
 		return
@@ -384,10 +382,10 @@ func pointerHandleAxisDiscrete(data unsafe.Pointer, wl_pointer *C.struct_wl_poin
 
 	// we call callbacks on frame event
 	switch axis {
-	case C.WL_POINTER_AXIS_VERTICAL_SCROLL:
+	case WL_POINTER_AXIS_VERTICAL_SCROLL:
 		d.pointer.lineDeltaVertical -= float64(discrete)
 
-	case C.WL_POINTER_AXIS_HORIZONTAL_SCROLL:
+	case WL_POINTER_AXIS_HORIZONTAL_SCROLL:
 		d.pointer.lineDeltaHorizontal -= float64(discrete)
 	}
 }

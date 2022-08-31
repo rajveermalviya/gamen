@@ -5,4 +5,5 @@ use (
 	./examples
 	./examples/wgpu_poll
 	./examples/wgpu_wait
+	./internal/wayland/gen
 )

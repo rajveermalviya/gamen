@@ -4,7 +4,7 @@ package wayland
 
 /*
 
-#include <wayland-client.h>
+#include "wayland-client-protocol.h"
 
 */
 import "C"
@@ -21,12 +21,12 @@ type Output struct {
 	// from geometry event
 	x, y                          int32
 	physicalWidth, physicalHeight int32
-	subpixel                      C.enum_wl_output_subpixel
+	subpixel                      wl_output_subpixel
 	make, model                   string
-	transform                     C.enum_wl_output_transform
+	transform                     wl_output_transform
 
 	// from mode event
-	flags         C.enum_wl_output_mode
+	flags         wl_output_mode
 	width, height int32
 	refresh       int32
 
@@ -55,10 +55,10 @@ func outputHandleGeometry(data unsafe.Pointer, wl_output *C.struct_wl_output,
 	output.y = int32(y)
 	output.physicalWidth = int32(physical_width)
 	output.physicalHeight = int32(physical_height)
-	output.subpixel = uint32(subpixel)
+	output.subpixel = wl_output_subpixel(subpixel)
 	output.make = C.GoString(make)
 	output.model = C.GoString(model)
-	output.transform = uint32(transform)
+	output.transform = wl_output_transform(transform)
 }
 
 //export outputHandleMode
@@ -77,7 +77,7 @@ func outputHandleMode(data unsafe.Pointer, wl_output *C.struct_wl_output,
 		return
 	}
 
-	output.flags = uint32(flags)
+	output.flags = wl_output_mode(flags)
 	output.width = int32(width)
 	output.height = int32(height)
 	output.refresh = int32(refresh)

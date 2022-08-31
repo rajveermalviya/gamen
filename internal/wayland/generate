@@ -1,0 +1,31 @@
+#!/bin/bash
+
+go run ./gen/ \
+    -i ./protocols/wayland.xml \
+    -cheader ./wayland-client-protocol.h \
+    -gosource ./wayland-client-protocol.go \
+    -pkg wayland
+
+wayland-scanner private-code \
+    < ./protocols/wayland.xml \
+    > ./wayland-client-protocol.c
+
+go run ./gen/ \
+    -i ./protocols/xdg-decoration-unstable-v1.xml \
+    -cheader ./xdg-decoration-unstable-v1-client-protocol.h \
+    -gosource ./xdg-decoration-unstable-v1-client-protocol.go \
+    -pkg wayland
+
+wayland-scanner private-code \
+    < ./protocols/xdg-decoration-unstable-v1.xml \
+    > ./xdg-decoration-unstable-v1-client-protocol.c
+
+go run ./gen/ \
+    -i ./protocols/xdg-shell.xml \
+    -cheader ./xdg-shell-client-protocol.h \
+    -gosource ./xdg-shell-client-protocol.go \
+    -pkg wayland
+
+wayland-scanner private-code \
+    < ./protocols/xdg-shell.xml \
+    > ./xdg-shell-client-protocol.c

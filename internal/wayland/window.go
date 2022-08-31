@@ -5,14 +5,14 @@ package wayland
 /*
 
 #include <stdlib.h>
-#include <wayland-client.h>
+#include "wayland-client-protocol.h"
 #include "xdg-shell-client-protocol.h"
 #include "xdg-decoration-unstable-v1-client-protocol.h"
 
-extern const struct wl_surface_listener window_surface_listener;
-extern const struct xdg_surface_listener xdg_surface_listener;
-extern const struct xdg_toplevel_listener xdg_toplevel_listener;
-extern const struct zxdg_toplevel_decoration_v1_listener zxdg_toplevel_decoration_v1_listener;
+extern const struct wl_surface_listener gamen_wl_surface_listener;
+extern const struct xdg_surface_listener gamen_xdg_surface_listener;
+extern const struct xdg_toplevel_listener gamen_xdg_toplevel_listener;
+extern const struct zxdg_toplevel_decoration_v1_listener gamen_zxdg_toplevel_decoration_v1_listener;
 
 */
 import "C"
@@ -75,34 +75,32 @@ func NewWindow(d *Display) (*Window, error) {
 		outputs:           make(map[*C.struct_wl_output]struct{}),
 		scaleFactor:       1,
 		currentCursorIcon: "left_ptr",
+		size: dpi.LogicalSize[uint32]{
+			Width:  640,
+			Height: 480,
+		},
 	}
 	handle := cgo.NewHandle(w)
 	w.handle = &handle
 
-	w.surface = C.wl_compositor_create_surface(d.compositor)
-	C.wl_surface_add_listener(w.surface, &C.window_surface_listener, unsafe.Pointer(w.handle))
+	w.surface = d.l.wl_compositor_create_surface(d.compositor)
+	d.l.wl_surface_add_listener(w.surface, &C.gamen_wl_surface_listener, unsafe.Pointer(w.handle))
 
-	w.xdgSurface = C.xdg_wm_base_get_xdg_surface(d.xdgWmBase, w.surface)
-	C.xdg_surface_add_listener(w.xdgSurface, &C.xdg_surface_listener, unsafe.Pointer(w.handle))
+	w.xdgSurface = d.l.xdg_wm_base_get_xdg_surface(d.xdgWmBase, w.surface)
+	d.l.xdg_surface_add_listener(w.xdgSurface, &C.gamen_xdg_surface_listener, unsafe.Pointer(w.handle))
 
-	w.xdgToplevel = C.xdg_surface_get_toplevel(w.xdgSurface)
-	C.xdg_toplevel_add_listener(w.xdgToplevel, &C.xdg_toplevel_listener, unsafe.Pointer(w.handle))
+	w.xdgToplevel = d.l.xdg_surface_get_toplevel(w.xdgSurface)
+	d.l.xdg_toplevel_add_listener(w.xdgToplevel, &C.gamen_xdg_toplevel_listener, unsafe.Pointer(w.handle))
 
 	if d.xdgDecorationManager != nil {
-		w.xdgToplevelDecoration = C.zxdg_decoration_manager_v1_get_toplevel_decoration(d.xdgDecorationManager, w.xdgToplevel)
-		C.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
-		C.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
+		w.xdgToplevelDecoration = d.l.zxdg_decoration_manager_v1_get_toplevel_decoration(d.xdgDecorationManager, w.xdgToplevel)
+		d.l.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.gamen_zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
+		d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.uint32_t(ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE))
 	}
 
-	C.wl_surface_commit(w.surface)
+	d.l.wl_surface_commit(w.surface)
 
 	d.windows[w.surface] = w
-
-	w.size = dpi.LogicalSize[uint32]{
-		Width:  640,
-		Height: 480,
-	}
-
 	return w, nil
 }
 
@@ -133,22 +131,22 @@ func (w *Window) Destroy() {
 		}
 
 		if w.xdgToplevelDecoration != nil {
-			C.zxdg_toplevel_decoration_v1_destroy(w.xdgToplevelDecoration)
+			w.d.l.zxdg_toplevel_decoration_v1_destroy(w.xdgToplevelDecoration)
 			w.xdgToplevelDecoration = nil
 		}
 
 		if w.xdgToplevel != nil {
-			C.xdg_toplevel_destroy(w.xdgToplevel)
+			w.d.l.xdg_toplevel_destroy(w.xdgToplevel)
 			w.xdgToplevel = nil
 		}
 
 		if w.xdgSurface != nil {
-			C.xdg_surface_destroy(w.xdgSurface)
+			w.d.l.xdg_surface_destroy(w.xdgSurface)
 			w.xdgSurface = nil
 		}
 
 		if w.surface != nil {
-			C.wl_surface_destroy(w.surface)
+			w.d.l.wl_surface_destroy(w.surface)
 			w.surface = nil
 		}
 
@@ -163,7 +161,7 @@ func (w *Window) SetTitle(title string) {
 	titlePtr := C.CString(title)
 	defer C.free(unsafe.Pointer(titlePtr))
 
-	C.xdg_toplevel_set_title(w.xdgToplevel, titlePtr)
+	w.d.l.xdg_toplevel_set_title(w.xdgToplevel, titlePtr)
 }
 
 func (w *Window) InnerSize() dpi.PhysicalSize[uint32] {
@@ -204,7 +202,7 @@ func (w *Window) SetMinInnerSize(size dpi.Size[uint32]) {
 
 	logicalSize := size.ToLogical(scaleFactor)
 
-	C.xdg_toplevel_set_min_size(
+	w.d.l.xdg_toplevel_set_min_size(
 		w.xdgToplevel,
 		C.int32_t(logicalSize.Width),
 		C.int32_t(logicalSize.Height),
@@ -218,7 +216,7 @@ func (w *Window) SetMaxInnerSize(size dpi.Size[uint32]) {
 
 	logicalSize := size.ToLogical(scaleFactor)
 
-	C.xdg_toplevel_set_max_size(
+	w.d.l.xdg_toplevel_set_max_size(
 		w.xdgToplevel,
 		C.int32_t(logicalSize.Width),
 		C.int32_t(logicalSize.Height),
@@ -231,13 +229,13 @@ func (w *Window) Maximized() bool {
 	return w.maximized
 }
 func (w *Window) SetMinimized() {
-	C.xdg_toplevel_set_minimized(w.xdgToplevel)
+	w.d.l.xdg_toplevel_set_minimized(w.xdgToplevel)
 }
 func (w *Window) SetMaximized(maximized bool) {
 	if maximized {
-		C.xdg_toplevel_set_maximized(w.xdgToplevel)
+		w.d.l.xdg_toplevel_set_maximized(w.xdgToplevel)
 	} else {
-		C.xdg_toplevel_unset_maximized(w.xdgToplevel)
+		w.d.l.xdg_toplevel_unset_maximized(w.xdgToplevel)
 	}
 }
 
@@ -333,9 +331,9 @@ func (w *Window) SetCursorVisible(visible bool) {
 
 func (w *Window) SetFullscreen(fullscreen bool) {
 	if fullscreen {
-		C.xdg_toplevel_set_fullscreen(w.xdgToplevel, nil)
+		w.d.l.xdg_toplevel_set_fullscreen(w.xdgToplevel, nil)
 	} else {
-		C.xdg_toplevel_unset_fullscreen(w.xdgToplevel)
+		w.d.l.xdg_toplevel_unset_fullscreen(w.xdgToplevel)
 	}
 }
 
@@ -350,7 +348,7 @@ func (w *Window) DragWindow() {
 	serial := w.d.pointer.serial
 	w.d.pointer.mu.Unlock()
 
-	C.xdg_toplevel_move(w.xdgToplevel, w.d.seat, C.uint32_t(serial))
+	w.d.l.xdg_toplevel_move(w.xdgToplevel, w.d.seat, C.uint32_t(serial))
 }
 
 func (w *Window) SetDecorations(decorate bool) {
@@ -359,17 +357,17 @@ func (w *Window) SetDecorations(decorate bool) {
 
 	if decorate {
 		if w.d.xdgDecorationManager != nil && w.xdgToplevelDecoration == nil {
-			w.xdgToplevelDecoration = C.zxdg_decoration_manager_v1_get_toplevel_decoration(w.d.xdgDecorationManager, w.xdgToplevel)
-			C.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
-			C.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.ZXDG_TOPLEVEL_DECORATION_V1_MODE_SERVER_SIDE)
-			C.wl_surface_commit(w.surface)
+			w.xdgToplevelDecoration = w.d.l.zxdg_decoration_manager_v1_get_toplevel_decoration(w.d.xdgDecorationManager, w.xdgToplevel)
+			w.d.l.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.gamen_zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
+			w.d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.uint32_t(ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE))
+			w.d.l.wl_surface_commit(w.surface)
 		}
 	} else {
 		if w.d.xdgDecorationManager != nil && w.xdgToplevelDecoration != nil {
-			C.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.ZXDG_TOPLEVEL_DECORATION_V1_MODE_CLIENT_SIDE)
-			C.zxdg_toplevel_decoration_v1_destroy(w.xdgToplevelDecoration)
+			w.d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.uint32_t(ZXDG_TOPLEVEL_DECORATION_V_1_MODE_CLIENT_SIDE))
+			w.d.l.zxdg_toplevel_decoration_v1_destroy(w.xdgToplevelDecoration)
 			w.xdgToplevelDecoration = nil
-			C.wl_surface_commit(w.surface)
+			w.d.l.wl_surface_commit(w.surface)
 		}
 	}
 }
@@ -459,8 +457,8 @@ func (w *Window) updateScaleFactor() {
 	}
 
 	w.scaleFactor = scaleFactor
-	C.wl_surface_set_buffer_scale(w.surface, C.int32_t(scaleFactor))
-	C.wl_surface_commit(w.surface)
+	w.d.l.wl_surface_set_buffer_scale(w.surface, C.int32_t(scaleFactor))
+	w.d.l.wl_surface_commit(w.surface)
 
 	physicalSize := w.size.ToPhysical(scaleFactor)
 
@@ -508,6 +506,16 @@ func windowSurfaceHandleLeave(data unsafe.Pointer, wl_surface *C.struct_wl_surfa
 	w.updateScaleFactor()
 }
 
+//export xdgSurfaceHandleConfigure
+func xdgSurfaceHandleConfigure(data unsafe.Pointer, xdg_surface *C.struct_xdg_surface, serial C.uint32_t) {
+	w, ok := (*cgo.Handle)(data).Value().(*Window)
+	if !ok {
+		return
+	}
+
+	w.d.l.xdg_surface_ack_configure(xdg_surface, serial)
+}
+
 //export xdgToplevelHandleConfigure
 func xdgToplevelHandleConfigure(data unsafe.Pointer, xdg_toplevel *C.struct_xdg_toplevel, width C.int32_t, height C.int32_t, states *C.struct_wl_array) {
 	if width == 0 || height == 0 {
@@ -522,11 +530,11 @@ func xdgToplevelHandleConfigure(data unsafe.Pointer, xdg_toplevel *C.struct_xdg_
 	maximized := false
 	fullscreen := false
 
-	for _, state := range castWlArrayToSlice[uint32](states) {
+	for _, state := range castWlArrayToSlice[xdg_toplevel_state](states) {
 		switch state {
-		case C.XDG_TOPLEVEL_STATE_MAXIMIZED:
+		case XDG_TOPLEVEL_STATE_MAXIMIZED:
 			maximized = true
-		case C.XDG_TOPLEVEL_STATE_FULLSCREEN:
+		case XDG_TOPLEVEL_STATE_FULLSCREEN:
 			fullscreen = true
 		}
 	}

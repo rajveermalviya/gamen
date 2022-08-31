@@ -5,7 +5,7 @@ package wayland
 /*
 
 #include <stdlib.h>
-#include <wayland-client.h>
+#include "wayland-client-protocol.h"
 
 */
 import "C"
@@ -46,7 +46,7 @@ type Keyboard struct {
 
 func (k *Keyboard) destroy() {
 	if k.keyboard != nil {
-		C.wl_keyboard_destroy(k.keyboard)
+		k.d.l.wl_keyboard_destroy(k.keyboard)
 		k.keyboard = nil
 	}
 }
@@ -158,7 +158,7 @@ func keyboardHandleLeave(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard,
 }
 
 //export keyboardHandleKey
-func keyboardHandleKey(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard, serial C.uint32_t, _time C.uint32_t, key C.uint32_t, state C.uint32_t) {
+func keyboardHandleKey(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard, serial C.uint32_t, _time C.uint32_t, key C.uint32_t, state wl_keyboard_key_state) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
 		return
@@ -177,20 +177,20 @@ func keyboardHandleKey(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard, s
 	now := time.Now()
 	k.repeatKeyStartTime = now
 	k.repeatKeyLastSendTime = now
-	if state == C.WL_KEYBOARD_KEY_STATE_RELEASED && k.repeatKey == uint32(key) {
+	if state == WL_KEYBOARD_KEY_STATE_RELEASED && k.repeatKey == uint32(key) {
 		k.repeatKey = 0
 	}
 
 	k.handleKeyEvent(key, state)
 
-	if state == C.WL_KEYBOARD_KEY_STATE_PRESSED && xkb.KeyRepeats(xkbcommon.KeyCode(key+8)) {
+	if state == WL_KEYBOARD_KEY_STATE_PRESSED && xkb.KeyRepeats(xkbcommon.KeyCode(key+8)) {
 		k.repeatKey = uint32(key)
 		k.repeatKeyStartTime = time.Now()
 		k.repeatKeyLastSendTime = k.repeatKeyStartTime
 	}
 }
 
-func (k *Keyboard) handleKeyEvent(key C.uint32_t, state C.uint32_t) {
+func (k *Keyboard) handleKeyEvent(key C.uint32_t, state wl_keyboard_key_state) {
 	xkb := k.d.xkb
 	w, ok := k.d.windows[k.focus]
 	if !ok {
@@ -210,9 +210,9 @@ func (k *Keyboard) handleKeyEvent(key C.uint32_t, state C.uint32_t) {
 	if keyboardInputCb != nil {
 		var buttonState events.ButtonState
 		switch state {
-		case C.WL_KEYBOARD_KEY_STATE_PRESSED:
+		case WL_KEYBOARD_KEY_STATE_PRESSED:
 			buttonState = events.ButtonStatePressed
-		case C.WL_KEYBOARD_KEY_STATE_RELEASED:
+		case WL_KEYBOARD_KEY_STATE_RELEASED:
 			buttonState = events.ButtonStateReleased
 		}
 
@@ -230,7 +230,7 @@ func (k *Keyboard) handleKeyEvent(key C.uint32_t, state C.uint32_t) {
 	}
 	w.mu.Unlock()
 
-	if state == C.WL_KEYBOARD_KEY_STATE_PRESSED && receivedCharacterCb != nil {
+	if state == WL_KEYBOARD_KEY_STATE_PRESSED && receivedCharacterCb != nil {
 		utf8 := xkb.GetUtf8(xkbcommon.KeyCode(key), xkbcommon.KeySym(sym))
 		for _, char := range utf8 {
 			receivedCharacterCb(char)
