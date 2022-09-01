@@ -1,3 +1,4 @@
+//go:build linux && !android
 /*
  * Copyright © 2012 Intel Corporation
  *

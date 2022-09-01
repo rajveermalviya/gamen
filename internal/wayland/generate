@@ -10,6 +10,8 @@ wayland-scanner private-code \
     < ./protocols/wayland.xml \
     > ./wayland-client-protocol.c
 
+sed -i '1i //go:build linux && !android' ./wayland-client-protocol.c
+
 go run ./gen/ \
     -i ./protocols/xdg-decoration-unstable-v1.xml \
     -cheader ./xdg-decoration-unstable-v1-client-protocol.h \
@@ -20,6 +22,8 @@ wayland-scanner private-code \
     < ./protocols/xdg-decoration-unstable-v1.xml \
     > ./xdg-decoration-unstable-v1-client-protocol.c
 
+sed -i '1i //go:build linux && !android' ./xdg-decoration-unstable-v1-client-protocol.c
+
 go run ./gen/ \
     -i ./protocols/xdg-shell.xml \
     -cheader ./xdg-shell-client-protocol.h \
@@ -29,3 +33,5 @@ go run ./gen/ \
 wayland-scanner private-code \
     < ./protocols/xdg-shell.xml \
     > ./xdg-shell-client-protocol.c
+
+sed -i '1i //go:build linux && !android' ./xdg-shell-client-protocol.c
