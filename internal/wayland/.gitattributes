@@ -1,7 +1,17 @@
 # See
 # https://github.com/github/linguist/blob/249bbd1c2ffc631ca2ec628da26be5800eec3d48/docs/overrides.md#vendored-code
 
-xdg-shell-client-protocol.h linguist-vendored
-xdg-shell-protocol.c linguist-vendored
-xdg-decoration-unstable-v1-client-protocol.h linguist-vendored
-xdg-decoration-unstable-v1-protocol.c linguist-vendored
+wayland-util.h linguist-vendored
+wayland-cursor.h linguist-vendored
+
+wayland-client-protocol.c linguist-generated
+wayland-client-protocol.h linguist-generated
+wayland-client-protocol.go linguist-generated
+
+xdg-decoration-unstable-v1-client-protocol.c linguist-generated
+xdg-decoration-unstable-v1-client-protocol.h linguist-generated
+xdg-decoration-unstable-v1-client-protocol.go linguist-generated
+
+xdg-shell-client-protocol.c linguist-generated
+xdg-shell-client-protocol.h linguist-generated
+xdg-shell-client-protocol.go linguist-generated

@@ -158,7 +158,7 @@ func keyboardHandleLeave(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard,
 }
 
 //export keyboardHandleKey
-func keyboardHandleKey(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard, serial C.uint32_t, _time C.uint32_t, key C.uint32_t, state wl_keyboard_key_state) {
+func keyboardHandleKey(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard, serial C.uint32_t, _time C.uint32_t, key C.uint32_t, state enum_wl_keyboard_key_state) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
 		return
@@ -190,7 +190,7 @@ func keyboardHandleKey(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard, s
 	}
 }
 
-func (k *Keyboard) handleKeyEvent(key C.uint32_t, state wl_keyboard_key_state) {
+func (k *Keyboard) handleKeyEvent(key C.uint32_t, state enum_wl_keyboard_key_state) {
 	xkb := k.d.xkb
 	w, ok := k.d.windows[k.focus]
 	if !ok {

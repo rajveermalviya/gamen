@@ -348,7 +348,7 @@ func xdgWmBaseHandlePing(data unsafe.Pointer, xdg_wm_base *C.struct_xdg_wm_base,
 }
 
 //export seatHandleCapabilities
-func seatHandleCapabilities(data unsafe.Pointer, wl_seat *C.struct_wl_seat, capabilities wl_seat_capability) {
+func seatHandleCapabilities(data unsafe.Pointer, wl_seat *C.struct_wl_seat, capabilities enum_wl_seat_capability) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
 		return

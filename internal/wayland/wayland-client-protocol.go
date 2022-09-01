@@ -15,17 +15,17 @@ import "unsafe"
 
 // These errors are global and can be emitted in response to any
 // server request.
-type wl_display_error C.uint32_t
+type enum_wl_display_error C.uint32_t
 
 const (
 	// server couldn't find object
-	WL_DISPLAY_ERROR_INVALID_OBJECT wl_display_error = 0
+	WL_DISPLAY_ERROR_INVALID_OBJECT enum_wl_display_error = 0
 	// method doesn't exist on the specified interface or malformed request
-	WL_DISPLAY_ERROR_INVALID_METHOD wl_display_error = 1
+	WL_DISPLAY_ERROR_INVALID_METHOD enum_wl_display_error = 1
 	// server is out of memory
-	WL_DISPLAY_ERROR_NO_MEMORY wl_display_error = 2
+	WL_DISPLAY_ERROR_NO_MEMORY enum_wl_display_error = 2
 	// implementation error in compositor
-	WL_DISPLAY_ERROR_IMPLEMENTATION wl_display_error = 3
+	WL_DISPLAY_ERROR_IMPLEMENTATION enum_wl_display_error = 3
 )
 
 func (l *wl_library) wl_display_add_listener(wl_display *C.struct_wl_display, listener *C.struct_wl_display_listener, data unsafe.Pointer) C.int {
@@ -119,8 +119,8 @@ func (l *wl_library) wl_compositor_destroy(wl_compositor *C.struct_wl_compositor
 // A buffer will keep a reference to the pool it was created from
 // so it is valid to destroy the pool immediately after creating
 // a buffer from it.
-func (l *wl_library) wl_shm_pool_create_buffer(wl_shm_pool *C.struct_wl_shm_pool, offset, width, height, stride C.int32_t, format C.uint32_t) *C.struct_wl_buffer {
-	return C.gamen_wl_shm_pool_create_buffer(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shm_pool, offset, width, height, stride, format)
+func (l *wl_library) wl_shm_pool_create_buffer(wl_shm_pool *C.struct_wl_shm_pool, offset, width, height, stride C.int32_t, format enum_wl_shm_format) *C.struct_wl_buffer {
+	return C.gamen_wl_shm_pool_create_buffer(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shm_pool, offset, width, height, stride, C.uint32_t(format))
 }
 
 // destroy the pool
@@ -151,15 +151,15 @@ func (l *wl_library) wl_shm_pool_resize(wl_shm_pool *C.struct_wl_shm_pool, size 
 }
 
 // These errors can be emitted in response to wl_shm requests.
-type wl_shm_error C.uint32_t
+type enum_wl_shm_error C.uint32_t
 
 const (
 	// buffer format is not known
-	WL_SHM_ERROR_INVALID_FORMAT wl_shm_error = 0
+	WL_SHM_ERROR_INVALID_FORMAT enum_wl_shm_error = 0
 	// invalid size or stride during pool or buffer creation
-	WL_SHM_ERROR_INVALID_STRIDE wl_shm_error = 1
+	WL_SHM_ERROR_INVALID_STRIDE enum_wl_shm_error = 1
 	// mmapping the file descriptor failed
-	WL_SHM_ERROR_INVALID_FD wl_shm_error = 2
+	WL_SHM_ERROR_INVALID_FD enum_wl_shm_error = 2
 )
 
 // This describes the memory layout of an individual pixel.
@@ -174,213 +174,213 @@ const (
 //
 // For all wl_shm formats and unless specified in another protocol
 // extension, pre-multiplied alpha is used for pixel values.
-type wl_shm_format C.uint32_t
+type enum_wl_shm_format C.uint32_t
 
 const (
 	// 32-bit ARGB format, [31:0] A:R:G:B 8:8:8:8 little endian
-	WL_SHM_FORMAT_ARGB_8888 wl_shm_format = 0
+	WL_SHM_FORMAT_ARGB_8888 enum_wl_shm_format = 0
 	// 32-bit RGB format, [31:0] x:R:G:B 8:8:8:8 little endian
-	WL_SHM_FORMAT_XRGB_8888 wl_shm_format = 1
+	WL_SHM_FORMAT_XRGB_8888 enum_wl_shm_format = 1
 	// 8-bit color index format, [7:0] C
-	WL_SHM_FORMAT_C_8 wl_shm_format = 0x20203843
+	WL_SHM_FORMAT_C_8 enum_wl_shm_format = 0x20203843
 	// 8-bit RGB format, [7:0] R:G:B 3:3:2
-	WL_SHM_FORMAT_RGB_332 wl_shm_format = 0x38424752
+	WL_SHM_FORMAT_RGB_332 enum_wl_shm_format = 0x38424752
 	// 8-bit BGR format, [7:0] B:G:R 2:3:3
-	WL_SHM_FORMAT_BGR_233 wl_shm_format = 0x38524742
+	WL_SHM_FORMAT_BGR_233 enum_wl_shm_format = 0x38524742
 	// 16-bit xRGB format, [15:0] x:R:G:B 4:4:4:4 little endian
-	WL_SHM_FORMAT_XRGB_4444 wl_shm_format = 0x32315258
+	WL_SHM_FORMAT_XRGB_4444 enum_wl_shm_format = 0x32315258
 	// 16-bit xBGR format, [15:0] x:B:G:R 4:4:4:4 little endian
-	WL_SHM_FORMAT_XBGR_4444 wl_shm_format = 0x32314258
+	WL_SHM_FORMAT_XBGR_4444 enum_wl_shm_format = 0x32314258
 	// 16-bit RGBx format, [15:0] R:G:B:x 4:4:4:4 little endian
-	WL_SHM_FORMAT_RGBX_4444 wl_shm_format = 0x32315852
+	WL_SHM_FORMAT_RGBX_4444 enum_wl_shm_format = 0x32315852
 	// 16-bit BGRx format, [15:0] B:G:R:x 4:4:4:4 little endian
-	WL_SHM_FORMAT_BGRX_4444 wl_shm_format = 0x32315842
+	WL_SHM_FORMAT_BGRX_4444 enum_wl_shm_format = 0x32315842
 	// 16-bit ARGB format, [15:0] A:R:G:B 4:4:4:4 little endian
-	WL_SHM_FORMAT_ARGB_4444 wl_shm_format = 0x32315241
+	WL_SHM_FORMAT_ARGB_4444 enum_wl_shm_format = 0x32315241
 	// 16-bit ABGR format, [15:0] A:B:G:R 4:4:4:4 little endian
-	WL_SHM_FORMAT_ABGR_4444 wl_shm_format = 0x32314241
+	WL_SHM_FORMAT_ABGR_4444 enum_wl_shm_format = 0x32314241
 	// 16-bit RBGA format, [15:0] R:G:B:A 4:4:4:4 little endian
-	WL_SHM_FORMAT_RGBA_4444 wl_shm_format = 0x32314152
+	WL_SHM_FORMAT_RGBA_4444 enum_wl_shm_format = 0x32314152
 	// 16-bit BGRA format, [15:0] B:G:R:A 4:4:4:4 little endian
-	WL_SHM_FORMAT_BGRA_4444 wl_shm_format = 0x32314142
+	WL_SHM_FORMAT_BGRA_4444 enum_wl_shm_format = 0x32314142
 	// 16-bit xRGB format, [15:0] x:R:G:B 1:5:5:5 little endian
-	WL_SHM_FORMAT_XRGB_1555 wl_shm_format = 0x35315258
+	WL_SHM_FORMAT_XRGB_1555 enum_wl_shm_format = 0x35315258
 	// 16-bit xBGR 1555 format, [15:0] x:B:G:R 1:5:5:5 little endian
-	WL_SHM_FORMAT_XBGR_1555 wl_shm_format = 0x35314258
+	WL_SHM_FORMAT_XBGR_1555 enum_wl_shm_format = 0x35314258
 	// 16-bit RGBx 5551 format, [15:0] R:G:B:x 5:5:5:1 little endian
-	WL_SHM_FORMAT_RGBX_5551 wl_shm_format = 0x35315852
+	WL_SHM_FORMAT_RGBX_5551 enum_wl_shm_format = 0x35315852
 	// 16-bit BGRx 5551 format, [15:0] B:G:R:x 5:5:5:1 little endian
-	WL_SHM_FORMAT_BGRX_5551 wl_shm_format = 0x35315842
+	WL_SHM_FORMAT_BGRX_5551 enum_wl_shm_format = 0x35315842
 	// 16-bit ARGB 1555 format, [15:0] A:R:G:B 1:5:5:5 little endian
-	WL_SHM_FORMAT_ARGB_1555 wl_shm_format = 0x35315241
+	WL_SHM_FORMAT_ARGB_1555 enum_wl_shm_format = 0x35315241
 	// 16-bit ABGR 1555 format, [15:0] A:B:G:R 1:5:5:5 little endian
-	WL_SHM_FORMAT_ABGR_1555 wl_shm_format = 0x35314241
+	WL_SHM_FORMAT_ABGR_1555 enum_wl_shm_format = 0x35314241
 	// 16-bit RGBA 5551 format, [15:0] R:G:B:A 5:5:5:1 little endian
-	WL_SHM_FORMAT_RGBA_5551 wl_shm_format = 0x35314152
+	WL_SHM_FORMAT_RGBA_5551 enum_wl_shm_format = 0x35314152
 	// 16-bit BGRA 5551 format, [15:0] B:G:R:A 5:5:5:1 little endian
-	WL_SHM_FORMAT_BGRA_5551 wl_shm_format = 0x35314142
+	WL_SHM_FORMAT_BGRA_5551 enum_wl_shm_format = 0x35314142
 	// 16-bit RGB 565 format, [15:0] R:G:B 5:6:5 little endian
-	WL_SHM_FORMAT_RGB_565 wl_shm_format = 0x36314752
+	WL_SHM_FORMAT_RGB_565 enum_wl_shm_format = 0x36314752
 	// 16-bit BGR 565 format, [15:0] B:G:R 5:6:5 little endian
-	WL_SHM_FORMAT_BGR_565 wl_shm_format = 0x36314742
+	WL_SHM_FORMAT_BGR_565 enum_wl_shm_format = 0x36314742
 	// 24-bit RGB format, [23:0] R:G:B little endian
-	WL_SHM_FORMAT_RGB_888 wl_shm_format = 0x34324752
+	WL_SHM_FORMAT_RGB_888 enum_wl_shm_format = 0x34324752
 	// 24-bit BGR format, [23:0] B:G:R little endian
-	WL_SHM_FORMAT_BGR_888 wl_shm_format = 0x34324742
+	WL_SHM_FORMAT_BGR_888 enum_wl_shm_format = 0x34324742
 	// 32-bit xBGR format, [31:0] x:B:G:R 8:8:8:8 little endian
-	WL_SHM_FORMAT_XBGR_8888 wl_shm_format = 0x34324258
+	WL_SHM_FORMAT_XBGR_8888 enum_wl_shm_format = 0x34324258
 	// 32-bit RGBx format, [31:0] R:G:B:x 8:8:8:8 little endian
-	WL_SHM_FORMAT_RGBX_8888 wl_shm_format = 0x34325852
+	WL_SHM_FORMAT_RGBX_8888 enum_wl_shm_format = 0x34325852
 	// 32-bit BGRx format, [31:0] B:G:R:x 8:8:8:8 little endian
-	WL_SHM_FORMAT_BGRX_8888 wl_shm_format = 0x34325842
+	WL_SHM_FORMAT_BGRX_8888 enum_wl_shm_format = 0x34325842
 	// 32-bit ABGR format, [31:0] A:B:G:R 8:8:8:8 little endian
-	WL_SHM_FORMAT_ABGR_8888 wl_shm_format = 0x34324241
+	WL_SHM_FORMAT_ABGR_8888 enum_wl_shm_format = 0x34324241
 	// 32-bit RGBA format, [31:0] R:G:B:A 8:8:8:8 little endian
-	WL_SHM_FORMAT_RGBA_8888 wl_shm_format = 0x34324152
+	WL_SHM_FORMAT_RGBA_8888 enum_wl_shm_format = 0x34324152
 	// 32-bit BGRA format, [31:0] B:G:R:A 8:8:8:8 little endian
-	WL_SHM_FORMAT_BGRA_8888 wl_shm_format = 0x34324142
+	WL_SHM_FORMAT_BGRA_8888 enum_wl_shm_format = 0x34324142
 	// 32-bit xRGB format, [31:0] x:R:G:B 2:10:10:10 little endian
-	WL_SHM_FORMAT_XRGB_2101010 wl_shm_format = 0x30335258
+	WL_SHM_FORMAT_XRGB_2101010 enum_wl_shm_format = 0x30335258
 	// 32-bit xBGR format, [31:0] x:B:G:R 2:10:10:10 little endian
-	WL_SHM_FORMAT_XBGR_2101010 wl_shm_format = 0x30334258
+	WL_SHM_FORMAT_XBGR_2101010 enum_wl_shm_format = 0x30334258
 	// 32-bit RGBx format, [31:0] R:G:B:x 10:10:10:2 little endian
-	WL_SHM_FORMAT_RGBX_1010102 wl_shm_format = 0x30335852
+	WL_SHM_FORMAT_RGBX_1010102 enum_wl_shm_format = 0x30335852
 	// 32-bit BGRx format, [31:0] B:G:R:x 10:10:10:2 little endian
-	WL_SHM_FORMAT_BGRX_1010102 wl_shm_format = 0x30335842
+	WL_SHM_FORMAT_BGRX_1010102 enum_wl_shm_format = 0x30335842
 	// 32-bit ARGB format, [31:0] A:R:G:B 2:10:10:10 little endian
-	WL_SHM_FORMAT_ARGB_2101010 wl_shm_format = 0x30335241
+	WL_SHM_FORMAT_ARGB_2101010 enum_wl_shm_format = 0x30335241
 	// 32-bit ABGR format, [31:0] A:B:G:R 2:10:10:10 little endian
-	WL_SHM_FORMAT_ABGR_2101010 wl_shm_format = 0x30334241
+	WL_SHM_FORMAT_ABGR_2101010 enum_wl_shm_format = 0x30334241
 	// 32-bit RGBA format, [31:0] R:G:B:A 10:10:10:2 little endian
-	WL_SHM_FORMAT_RGBA_1010102 wl_shm_format = 0x30334152
+	WL_SHM_FORMAT_RGBA_1010102 enum_wl_shm_format = 0x30334152
 	// 32-bit BGRA format, [31:0] B:G:R:A 10:10:10:2 little endian
-	WL_SHM_FORMAT_BGRA_1010102 wl_shm_format = 0x30334142
+	WL_SHM_FORMAT_BGRA_1010102 enum_wl_shm_format = 0x30334142
 	// packed YCbCr format, [31:0] Cr0:Y1:Cb0:Y0 8:8:8:8 little endian
-	WL_SHM_FORMAT_YUYV wl_shm_format = 0x56595559
+	WL_SHM_FORMAT_YUYV enum_wl_shm_format = 0x56595559
 	// packed YCbCr format, [31:0] Cb0:Y1:Cr0:Y0 8:8:8:8 little endian
-	WL_SHM_FORMAT_YVYU wl_shm_format = 0x55595659
+	WL_SHM_FORMAT_YVYU enum_wl_shm_format = 0x55595659
 	// packed YCbCr format, [31:0] Y1:Cr0:Y0:Cb0 8:8:8:8 little endian
-	WL_SHM_FORMAT_UYVY wl_shm_format = 0x59565955
+	WL_SHM_FORMAT_UYVY enum_wl_shm_format = 0x59565955
 	// packed YCbCr format, [31:0] Y1:Cb0:Y0:Cr0 8:8:8:8 little endian
-	WL_SHM_FORMAT_VYUY wl_shm_format = 0x59555956
+	WL_SHM_FORMAT_VYUY enum_wl_shm_format = 0x59555956
 	// packed AYCbCr format, [31:0] A:Y:Cb:Cr 8:8:8:8 little endian
-	WL_SHM_FORMAT_AYUV wl_shm_format = 0x56555941
+	WL_SHM_FORMAT_AYUV enum_wl_shm_format = 0x56555941
 	// 2 plane YCbCr Cr:Cb format, 2x2 subsampled Cr:Cb plane
-	WL_SHM_FORMAT_NV_12 wl_shm_format = 0x3231564e
+	WL_SHM_FORMAT_NV_12 enum_wl_shm_format = 0x3231564e
 	// 2 plane YCbCr Cb:Cr format, 2x2 subsampled Cb:Cr plane
-	WL_SHM_FORMAT_NV_21 wl_shm_format = 0x3132564e
+	WL_SHM_FORMAT_NV_21 enum_wl_shm_format = 0x3132564e
 	// 2 plane YCbCr Cr:Cb format, 2x1 subsampled Cr:Cb plane
-	WL_SHM_FORMAT_NV_16 wl_shm_format = 0x3631564e
+	WL_SHM_FORMAT_NV_16 enum_wl_shm_format = 0x3631564e
 	// 2 plane YCbCr Cb:Cr format, 2x1 subsampled Cb:Cr plane
-	WL_SHM_FORMAT_NV_61 wl_shm_format = 0x3136564e
+	WL_SHM_FORMAT_NV_61 enum_wl_shm_format = 0x3136564e
 	// 3 plane YCbCr format, 4x4 subsampled Cb (1) and Cr (2) planes
-	WL_SHM_FORMAT_YUV_410 wl_shm_format = 0x39565559
+	WL_SHM_FORMAT_YUV_410 enum_wl_shm_format = 0x39565559
 	// 3 plane YCbCr format, 4x4 subsampled Cr (1) and Cb (2) planes
-	WL_SHM_FORMAT_YVU_410 wl_shm_format = 0x39555659
+	WL_SHM_FORMAT_YVU_410 enum_wl_shm_format = 0x39555659
 	// 3 plane YCbCr format, 4x1 subsampled Cb (1) and Cr (2) planes
-	WL_SHM_FORMAT_YUV_411 wl_shm_format = 0x31315559
+	WL_SHM_FORMAT_YUV_411 enum_wl_shm_format = 0x31315559
 	// 3 plane YCbCr format, 4x1 subsampled Cr (1) and Cb (2) planes
-	WL_SHM_FORMAT_YVU_411 wl_shm_format = 0x31315659
+	WL_SHM_FORMAT_YVU_411 enum_wl_shm_format = 0x31315659
 	// 3 plane YCbCr format, 2x2 subsampled Cb (1) and Cr (2) planes
-	WL_SHM_FORMAT_YUV_420 wl_shm_format = 0x32315559
+	WL_SHM_FORMAT_YUV_420 enum_wl_shm_format = 0x32315559
 	// 3 plane YCbCr format, 2x2 subsampled Cr (1) and Cb (2) planes
-	WL_SHM_FORMAT_YVU_420 wl_shm_format = 0x32315659
+	WL_SHM_FORMAT_YVU_420 enum_wl_shm_format = 0x32315659
 	// 3 plane YCbCr format, 2x1 subsampled Cb (1) and Cr (2) planes
-	WL_SHM_FORMAT_YUV_422 wl_shm_format = 0x36315559
+	WL_SHM_FORMAT_YUV_422 enum_wl_shm_format = 0x36315559
 	// 3 plane YCbCr format, 2x1 subsampled Cr (1) and Cb (2) planes
-	WL_SHM_FORMAT_YVU_422 wl_shm_format = 0x36315659
+	WL_SHM_FORMAT_YVU_422 enum_wl_shm_format = 0x36315659
 	// 3 plane YCbCr format, non-subsampled Cb (1) and Cr (2) planes
-	WL_SHM_FORMAT_YUV_444 wl_shm_format = 0x34325559
+	WL_SHM_FORMAT_YUV_444 enum_wl_shm_format = 0x34325559
 	// 3 plane YCbCr format, non-subsampled Cr (1) and Cb (2) planes
-	WL_SHM_FORMAT_YVU_444 wl_shm_format = 0x34325659
+	WL_SHM_FORMAT_YVU_444 enum_wl_shm_format = 0x34325659
 	// [7:0] R
-	WL_SHM_FORMAT_R_8 wl_shm_format = 0x20203852
+	WL_SHM_FORMAT_R_8 enum_wl_shm_format = 0x20203852
 	// [15:0] R little endian
-	WL_SHM_FORMAT_R_16 wl_shm_format = 0x20363152
+	WL_SHM_FORMAT_R_16 enum_wl_shm_format = 0x20363152
 	// [15:0] R:G 8:8 little endian
-	WL_SHM_FORMAT_RG_88 wl_shm_format = 0x38384752
+	WL_SHM_FORMAT_RG_88 enum_wl_shm_format = 0x38384752
 	// [15:0] G:R 8:8 little endian
-	WL_SHM_FORMAT_GR_88 wl_shm_format = 0x38385247
+	WL_SHM_FORMAT_GR_88 enum_wl_shm_format = 0x38385247
 	// [31:0] R:G 16:16 little endian
-	WL_SHM_FORMAT_RG_1616 wl_shm_format = 0x32334752
+	WL_SHM_FORMAT_RG_1616 enum_wl_shm_format = 0x32334752
 	// [31:0] G:R 16:16 little endian
-	WL_SHM_FORMAT_GR_1616 wl_shm_format = 0x32335247
+	WL_SHM_FORMAT_GR_1616 enum_wl_shm_format = 0x32335247
 	// [63:0] x:R:G:B 16:16:16:16 little endian
-	WL_SHM_FORMAT_XRGB_16161616_F wl_shm_format = 0x48345258
+	WL_SHM_FORMAT_XRGB_16161616_F enum_wl_shm_format = 0x48345258
 	// [63:0] x:B:G:R 16:16:16:16 little endian
-	WL_SHM_FORMAT_XBGR_16161616_F wl_shm_format = 0x48344258
+	WL_SHM_FORMAT_XBGR_16161616_F enum_wl_shm_format = 0x48344258
 	// [63:0] A:R:G:B 16:16:16:16 little endian
-	WL_SHM_FORMAT_ARGB_16161616_F wl_shm_format = 0x48345241
+	WL_SHM_FORMAT_ARGB_16161616_F enum_wl_shm_format = 0x48345241
 	// [63:0] A:B:G:R 16:16:16:16 little endian
-	WL_SHM_FORMAT_ABGR_16161616_F wl_shm_format = 0x48344241
+	WL_SHM_FORMAT_ABGR_16161616_F enum_wl_shm_format = 0x48344241
 	// [31:0] X:Y:Cb:Cr 8:8:8:8 little endian
-	WL_SHM_FORMAT_XYUV_8888 wl_shm_format = 0x56555958
+	WL_SHM_FORMAT_XYUV_8888 enum_wl_shm_format = 0x56555958
 	// [23:0] Cr:Cb:Y 8:8:8 little endian
-	WL_SHM_FORMAT_VUY_888 wl_shm_format = 0x34325556
+	WL_SHM_FORMAT_VUY_888 enum_wl_shm_format = 0x34325556
 	// Y followed by U then V, 10:10:10. Non-linear modifier only
-	WL_SHM_FORMAT_VUY_101010 wl_shm_format = 0x30335556
+	WL_SHM_FORMAT_VUY_101010 enum_wl_shm_format = 0x30335556
 	// [63:0] Cr0:0:Y1:0:Cb0:0:Y0:0 10:6:10:6:10:6:10:6 little endian per 2 Y pixels
-	WL_SHM_FORMAT_Y_210 wl_shm_format = 0x30313259
+	WL_SHM_FORMAT_Y_210 enum_wl_shm_format = 0x30313259
 	// [63:0] Cr0:0:Y1:0:Cb0:0:Y0:0 12:4:12:4:12:4:12:4 little endian per 2 Y pixels
-	WL_SHM_FORMAT_Y_212 wl_shm_format = 0x32313259
+	WL_SHM_FORMAT_Y_212 enum_wl_shm_format = 0x32313259
 	// [63:0] Cr0:Y1:Cb0:Y0 16:16:16:16 little endian per 2 Y pixels
-	WL_SHM_FORMAT_Y_216 wl_shm_format = 0x36313259
+	WL_SHM_FORMAT_Y_216 enum_wl_shm_format = 0x36313259
 	// [31:0] A:Cr:Y:Cb 2:10:10:10 little endian
-	WL_SHM_FORMAT_Y_410 wl_shm_format = 0x30313459
+	WL_SHM_FORMAT_Y_410 enum_wl_shm_format = 0x30313459
 	// [63:0] A:0:Cr:0:Y:0:Cb:0 12:4:12:4:12:4:12:4 little endian
-	WL_SHM_FORMAT_Y_412 wl_shm_format = 0x32313459
+	WL_SHM_FORMAT_Y_412 enum_wl_shm_format = 0x32313459
 	// [63:0] A:Cr:Y:Cb 16:16:16:16 little endian
-	WL_SHM_FORMAT_Y_416 wl_shm_format = 0x36313459
+	WL_SHM_FORMAT_Y_416 enum_wl_shm_format = 0x36313459
 	// [31:0] X:Cr:Y:Cb 2:10:10:10 little endian
-	WL_SHM_FORMAT_XVYU_2101010 wl_shm_format = 0x30335658
+	WL_SHM_FORMAT_XVYU_2101010 enum_wl_shm_format = 0x30335658
 	// [63:0] X:0:Cr:0:Y:0:Cb:0 12:4:12:4:12:4:12:4 little endian
-	WL_SHM_FORMAT_XVYU_12_16161616 wl_shm_format = 0x36335658
+	WL_SHM_FORMAT_XVYU_12_16161616 enum_wl_shm_format = 0x36335658
 	// [63:0] X:Cr:Y:Cb 16:16:16:16 little endian
-	WL_SHM_FORMAT_XVYU_16161616 wl_shm_format = 0x38345658
+	WL_SHM_FORMAT_XVYU_16161616 enum_wl_shm_format = 0x38345658
 	// [63:0]   A3:A2:Y3:0:Cr0:0:Y2:0:A1:A0:Y1:0:Cb0:0:Y0:0  1:1:8:2:8:2:8:2:1:1:8:2:8:2:8:2 little endian
-	WL_SHM_FORMAT_Y_0_L_0 wl_shm_format = 0x304c3059
+	WL_SHM_FORMAT_Y_0_L_0 enum_wl_shm_format = 0x304c3059
 	// [63:0]   X3:X2:Y3:0:Cr0:0:Y2:0:X1:X0:Y1:0:Cb0:0:Y0:0  1:1:8:2:8:2:8:2:1:1:8:2:8:2:8:2 little endian
-	WL_SHM_FORMAT_X_0_L_0 wl_shm_format = 0x304c3058
+	WL_SHM_FORMAT_X_0_L_0 enum_wl_shm_format = 0x304c3058
 	// [63:0]   A3:A2:Y3:Cr0:Y2:A1:A0:Y1:Cb0:Y0  1:1:10:10:10:1:1:10:10:10 little endian
-	WL_SHM_FORMAT_Y_0_L_2 wl_shm_format = 0x324c3059
+	WL_SHM_FORMAT_Y_0_L_2 enum_wl_shm_format = 0x324c3059
 	// [63:0]   X3:X2:Y3:Cr0:Y2:X1:X0:Y1:Cb0:Y0  1:1:10:10:10:1:1:10:10:10 little endian
-	WL_SHM_FORMAT_X_0_L_2        wl_shm_format = 0x324c3058
-	WL_SHM_FORMAT_YUV_420_8_BIT  wl_shm_format = 0x38305559
-	WL_SHM_FORMAT_YUV_420_10_BIT wl_shm_format = 0x30315559
-	WL_SHM_FORMAT_XRGB_8888_A_8  wl_shm_format = 0x38415258
-	WL_SHM_FORMAT_XBGR_8888_A_8  wl_shm_format = 0x38414258
-	WL_SHM_FORMAT_RGBX_8888_A_8  wl_shm_format = 0x38415852
-	WL_SHM_FORMAT_BGRX_8888_A_8  wl_shm_format = 0x38415842
-	WL_SHM_FORMAT_RGB_888_A_8    wl_shm_format = 0x38413852
-	WL_SHM_FORMAT_BGR_888_A_8    wl_shm_format = 0x38413842
-	WL_SHM_FORMAT_RGB_565_A_8    wl_shm_format = 0x38413552
-	WL_SHM_FORMAT_BGR_565_A_8    wl_shm_format = 0x38413542
+	WL_SHM_FORMAT_X_0_L_2        enum_wl_shm_format = 0x324c3058
+	WL_SHM_FORMAT_YUV_420_8_BIT  enum_wl_shm_format = 0x38305559
+	WL_SHM_FORMAT_YUV_420_10_BIT enum_wl_shm_format = 0x30315559
+	WL_SHM_FORMAT_XRGB_8888_A_8  enum_wl_shm_format = 0x38415258
+	WL_SHM_FORMAT_XBGR_8888_A_8  enum_wl_shm_format = 0x38414258
+	WL_SHM_FORMAT_RGBX_8888_A_8  enum_wl_shm_format = 0x38415852
+	WL_SHM_FORMAT_BGRX_8888_A_8  enum_wl_shm_format = 0x38415842
+	WL_SHM_FORMAT_RGB_888_A_8    enum_wl_shm_format = 0x38413852
+	WL_SHM_FORMAT_BGR_888_A_8    enum_wl_shm_format = 0x38413842
+	WL_SHM_FORMAT_RGB_565_A_8    enum_wl_shm_format = 0x38413552
+	WL_SHM_FORMAT_BGR_565_A_8    enum_wl_shm_format = 0x38413542
 	// non-subsampled Cr:Cb plane
-	WL_SHM_FORMAT_NV_24 wl_shm_format = 0x3432564e
+	WL_SHM_FORMAT_NV_24 enum_wl_shm_format = 0x3432564e
 	// non-subsampled Cb:Cr plane
-	WL_SHM_FORMAT_NV_42 wl_shm_format = 0x3234564e
+	WL_SHM_FORMAT_NV_42 enum_wl_shm_format = 0x3234564e
 	// 2x1 subsampled Cr:Cb plane, 10 bit per channel
-	WL_SHM_FORMAT_P_210 wl_shm_format = 0x30313250
+	WL_SHM_FORMAT_P_210 enum_wl_shm_format = 0x30313250
 	// 2x2 subsampled Cr:Cb plane 10 bits per channel
-	WL_SHM_FORMAT_P_010 wl_shm_format = 0x30313050
+	WL_SHM_FORMAT_P_010 enum_wl_shm_format = 0x30313050
 	// 2x2 subsampled Cr:Cb plane 12 bits per channel
-	WL_SHM_FORMAT_P_012 wl_shm_format = 0x32313050
+	WL_SHM_FORMAT_P_012 enum_wl_shm_format = 0x32313050
 	// 2x2 subsampled Cr:Cb plane 16 bits per channel
-	WL_SHM_FORMAT_P_016 wl_shm_format = 0x36313050
+	WL_SHM_FORMAT_P_016 enum_wl_shm_format = 0x36313050
 	// [63:0] A:x:B:x:G:x:R:x 10:6:10:6:10:6:10:6 little endian
-	WL_SHM_FORMAT_AXBXGXRX_106106106106 wl_shm_format = 0x30314241
+	WL_SHM_FORMAT_AXBXGXRX_106106106106 enum_wl_shm_format = 0x30314241
 	// 2x2 subsampled Cr:Cb plane
-	WL_SHM_FORMAT_NV_15 wl_shm_format = 0x3531564e
-	WL_SHM_FORMAT_Q_410 wl_shm_format = 0x30313451
-	WL_SHM_FORMAT_Q_401 wl_shm_format = 0x31303451
+	WL_SHM_FORMAT_NV_15 enum_wl_shm_format = 0x3531564e
+	WL_SHM_FORMAT_Q_410 enum_wl_shm_format = 0x30313451
+	WL_SHM_FORMAT_Q_401 enum_wl_shm_format = 0x31303451
 	// [63:0] x:R:G:B 16:16:16:16 little endian
-	WL_SHM_FORMAT_XRGB_16161616 wl_shm_format = 0x38345258
+	WL_SHM_FORMAT_XRGB_16161616 enum_wl_shm_format = 0x38345258
 	// [63:0] x:B:G:R 16:16:16:16 little endian
-	WL_SHM_FORMAT_XBGR_16161616 wl_shm_format = 0x38344258
+	WL_SHM_FORMAT_XBGR_16161616 enum_wl_shm_format = 0x38344258
 	// [63:0] A:R:G:B 16:16:16:16 little endian
-	WL_SHM_FORMAT_ARGB_16161616 wl_shm_format = 0x38345241
+	WL_SHM_FORMAT_ARGB_16161616 enum_wl_shm_format = 0x38345241
 	// [63:0] A:B:G:R 16:16:16:16 little endian
-	WL_SHM_FORMAT_ABGR_16161616 wl_shm_format = 0x38344241
+	WL_SHM_FORMAT_ABGR_16161616 enum_wl_shm_format = 0x38344241
 )
 
 func (l *wl_library) wl_shm_add_listener(wl_shm *C.struct_wl_shm, listener *C.struct_wl_shm_listener, data unsafe.Pointer) C.int {
@@ -416,17 +416,17 @@ func (l *wl_library) wl_buffer_destroy(wl_buffer *C.struct_wl_buffer) {
 	C.gamen_wl_buffer_destroy(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_buffer)
 }
 
-type wl_data_offer_error C.uint32_t
+type enum_wl_data_offer_error C.uint32_t
 
 const (
 	// finish request was called untimely
-	WL_DATA_OFFER_ERROR_INVALID_FINISH wl_data_offer_error = 0
+	WL_DATA_OFFER_ERROR_INVALID_FINISH enum_wl_data_offer_error = 0
 	// action mask contains invalid values
-	WL_DATA_OFFER_ERROR_INVALID_ACTION_MASK wl_data_offer_error = 1
+	WL_DATA_OFFER_ERROR_INVALID_ACTION_MASK enum_wl_data_offer_error = 1
 	// action argument has an invalid value
-	WL_DATA_OFFER_ERROR_INVALID_ACTION wl_data_offer_error = 2
+	WL_DATA_OFFER_ERROR_INVALID_ACTION enum_wl_data_offer_error = 2
 	// offer doesn't accept this request
-	WL_DATA_OFFER_ERROR_INVALID_OFFER wl_data_offer_error = 3
+	WL_DATA_OFFER_ERROR_INVALID_OFFER enum_wl_data_offer_error = 3
 )
 
 func (l *wl_library) wl_data_offer_add_listener(wl_data_offer *C.struct_wl_data_offer, listener *C.struct_wl_data_offer_listener, data unsafe.Pointer) C.int {
@@ -534,17 +534,17 @@ func (l *wl_library) wl_data_offer_finish(wl_data_offer *C.struct_wl_data_offer)
 //
 // This request can only be made on drag-and-drop offers, a protocol error
 // will be raised otherwise.
-func (l *wl_library) wl_data_offer_set_actions(wl_data_offer *C.struct_wl_data_offer, dnd_actions, preferred_action C.uint32_t) {
-	C.gamen_wl_data_offer_set_actions(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_data_offer, dnd_actions, preferred_action)
+func (l *wl_library) wl_data_offer_set_actions(wl_data_offer *C.struct_wl_data_offer, dnd_actions, preferred_action enum_wl_data_device_manager_dnd_action) {
+	C.gamen_wl_data_offer_set_actions(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_data_offer, C.uint32_t(dnd_actions), C.uint32_t(preferred_action))
 }
 
-type wl_data_source_error C.uint32_t
+type enum_wl_data_source_error C.uint32_t
 
 const (
 	// action mask contains invalid values
-	WL_DATA_SOURCE_ERROR_INVALID_ACTION_MASK wl_data_source_error = 0
+	WL_DATA_SOURCE_ERROR_INVALID_ACTION_MASK enum_wl_data_source_error = 0
 	// source doesn't accept this request
-	WL_DATA_SOURCE_ERROR_INVALID_SOURCE wl_data_source_error = 1
+	WL_DATA_SOURCE_ERROR_INVALID_SOURCE enum_wl_data_source_error = 1
 )
 
 func (l *wl_library) wl_data_source_add_listener(wl_data_source *C.struct_wl_data_source, listener *C.struct_wl_data_source_listener, data unsafe.Pointer) C.int {
@@ -582,15 +582,15 @@ func (l *wl_library) wl_data_source_destroy(wl_data_source *C.struct_wl_data_sou
 // used in drag-and-drop, so it must be performed before
 // wl_data_device.start_drag. Attempting to use the source other than
 // for drag-and-drop will raise a protocol error.
-func (l *wl_library) wl_data_source_set_actions(wl_data_source *C.struct_wl_data_source, dnd_actions C.uint32_t) {
-	C.gamen_wl_data_source_set_actions(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_data_source, dnd_actions)
+func (l *wl_library) wl_data_source_set_actions(wl_data_source *C.struct_wl_data_source, dnd_actions enum_wl_data_device_manager_dnd_action) {
+	C.gamen_wl_data_source_set_actions(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_data_source, C.uint32_t(dnd_actions))
 }
 
-type wl_data_device_error C.uint32_t
+type enum_wl_data_device_error C.uint32_t
 
 const (
 	// given wl_surface has another role
-	WL_DATA_DEVICE_ERROR_ROLE wl_data_device_error = 0
+	WL_DATA_DEVICE_ERROR_ROLE enum_wl_data_device_error = 0
 )
 
 func (l *wl_library) wl_data_device_add_listener(wl_data_device *C.struct_wl_data_device, listener *C.struct_wl_data_device_listener, data unsafe.Pointer) C.int {
@@ -675,17 +675,17 @@ func (l *wl_library) wl_data_device_destroy(wl_data_device *C.struct_wl_data_dev
 // Compositors may for example bind other modifiers (like Alt/Meta)
 // or drags initiated with other buttons than BTN_LEFT to specific
 // actions (e.g. "ask").
-type wl_data_device_manager_dnd_action C.uint32_t
+type enum_wl_data_device_manager_dnd_action C.uint32_t
 
 const (
 	// no action
-	WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE wl_data_device_manager_dnd_action = 0
+	WL_DATA_DEVICE_MANAGER_DND_ACTION_NONE enum_wl_data_device_manager_dnd_action = 0
 	// copy action
-	WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY wl_data_device_manager_dnd_action = 1
+	WL_DATA_DEVICE_MANAGER_DND_ACTION_COPY enum_wl_data_device_manager_dnd_action = 1
 	// move action
-	WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE wl_data_device_manager_dnd_action = 2
+	WL_DATA_DEVICE_MANAGER_DND_ACTION_MOVE enum_wl_data_device_manager_dnd_action = 2
 	// ask action
-	WL_DATA_DEVICE_MANAGER_DND_ACTION_ASK wl_data_device_manager_dnd_action = 4
+	WL_DATA_DEVICE_MANAGER_DND_ACTION_ASK enum_wl_data_device_manager_dnd_action = 4
 )
 
 // create a new data source
@@ -706,11 +706,11 @@ func (l *wl_library) wl_data_device_manager_destroy(wl_data_device_manager *C.st
 	l.wl_proxy_destroy((*C.struct_wl_proxy)(wl_data_device_manager))
 }
 
-type wl_shell_error C.uint32_t
+type enum_wl_shell_error C.uint32_t
 
 const (
 	// given wl_surface has another role
-	WL_SHELL_ERROR_ROLE wl_shell_error = 0
+	WL_SHELL_ERROR_ROLE enum_wl_shell_error = 0
 )
 
 // create a shell surface from a surface
@@ -732,52 +732,52 @@ func (l *wl_library) wl_shell_destroy(wl_shell *C.struct_wl_shell) {
 // is being dragged in a resize operation. The server may
 // use this information to adapt its behavior, e.g. choose
 // an appropriate cursor image.
-type wl_shell_surface_resize C.uint32_t
+type enum_wl_shell_surface_resize C.uint32_t
 
 const (
 	// no edge
-	WL_SHELL_SURFACE_RESIZE_NONE wl_shell_surface_resize = 0
+	WL_SHELL_SURFACE_RESIZE_NONE enum_wl_shell_surface_resize = 0
 	// top edge
-	WL_SHELL_SURFACE_RESIZE_TOP wl_shell_surface_resize = 1
+	WL_SHELL_SURFACE_RESIZE_TOP enum_wl_shell_surface_resize = 1
 	// bottom edge
-	WL_SHELL_SURFACE_RESIZE_BOTTOM wl_shell_surface_resize = 2
+	WL_SHELL_SURFACE_RESIZE_BOTTOM enum_wl_shell_surface_resize = 2
 	// left edge
-	WL_SHELL_SURFACE_RESIZE_LEFT wl_shell_surface_resize = 4
+	WL_SHELL_SURFACE_RESIZE_LEFT enum_wl_shell_surface_resize = 4
 	// top and left edges
-	WL_SHELL_SURFACE_RESIZE_TOP_LEFT wl_shell_surface_resize = 5
+	WL_SHELL_SURFACE_RESIZE_TOP_LEFT enum_wl_shell_surface_resize = 5
 	// bottom and left edges
-	WL_SHELL_SURFACE_RESIZE_BOTTOM_LEFT wl_shell_surface_resize = 6
+	WL_SHELL_SURFACE_RESIZE_BOTTOM_LEFT enum_wl_shell_surface_resize = 6
 	// right edge
-	WL_SHELL_SURFACE_RESIZE_RIGHT wl_shell_surface_resize = 8
+	WL_SHELL_SURFACE_RESIZE_RIGHT enum_wl_shell_surface_resize = 8
 	// top and right edges
-	WL_SHELL_SURFACE_RESIZE_TOP_RIGHT wl_shell_surface_resize = 9
+	WL_SHELL_SURFACE_RESIZE_TOP_RIGHT enum_wl_shell_surface_resize = 9
 	// bottom and right edges
-	WL_SHELL_SURFACE_RESIZE_BOTTOM_RIGHT wl_shell_surface_resize = 10
+	WL_SHELL_SURFACE_RESIZE_BOTTOM_RIGHT enum_wl_shell_surface_resize = 10
 )
 
 // These flags specify details of the expected behaviour
 // of transient surfaces. Used in the set_transient request.
-type wl_shell_surface_transient C.uint32_t
+type enum_wl_shell_surface_transient C.uint32_t
 
 const (
 	// do not set keyboard focus
-	WL_SHELL_SURFACE_TRANSIENT_INACTIVE wl_shell_surface_transient = 0x1
+	WL_SHELL_SURFACE_TRANSIENT_INACTIVE enum_wl_shell_surface_transient = 0x1
 )
 
 // Hints to indicate to the compositor how to deal with a conflict
 // between the dimensions of the surface and the dimensions of the
 // output. The compositor is free to ignore this parameter.
-type wl_shell_surface_fullscreen_method C.uint32_t
+type enum_wl_shell_surface_fullscreen_method C.uint32_t
 
 const (
 	// no preference, apply default policy
-	WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT wl_shell_surface_fullscreen_method = 0
+	WL_SHELL_SURFACE_FULLSCREEN_METHOD_DEFAULT enum_wl_shell_surface_fullscreen_method = 0
 	// scale, preserve the surface's aspect ratio and center on output
-	WL_SHELL_SURFACE_FULLSCREEN_METHOD_SCALE wl_shell_surface_fullscreen_method = 1
+	WL_SHELL_SURFACE_FULLSCREEN_METHOD_SCALE enum_wl_shell_surface_fullscreen_method = 1
 	// switch output mode to the smallest mode that can fit the surface, add black borders to compensate size mismatch
-	WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER wl_shell_surface_fullscreen_method = 2
+	WL_SHELL_SURFACE_FULLSCREEN_METHOD_DRIVER enum_wl_shell_surface_fullscreen_method = 2
 	// no upscaling, center on output and add black borders to compensate size mismatch
-	WL_SHELL_SURFACE_FULLSCREEN_METHOD_FILL wl_shell_surface_fullscreen_method = 3
+	WL_SHELL_SURFACE_FULLSCREEN_METHOD_FILL enum_wl_shell_surface_fullscreen_method = 3
 )
 
 func (l *wl_library) wl_shell_surface_add_listener(wl_shell_surface *C.struct_wl_shell_surface, listener *C.struct_wl_shell_surface_listener, data unsafe.Pointer) C.int {
@@ -810,8 +810,8 @@ func (l *wl_library) wl_shell_surface_move(wl_shell_surface *C.struct_wl_shell_s
 // This request must be used in response to a button press event.
 // The server may ignore resize requests depending on the state of
 // the surface (e.g. fullscreen or maximized).
-func (l *wl_library) wl_shell_surface_resize(wl_shell_surface *C.struct_wl_shell_surface, seat *C.struct_wl_seat, serial, edges C.uint32_t) {
-	C.gamen_wl_shell_surface_resize(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, seat, serial, edges)
+func (l *wl_library) wl_shell_surface_resize(wl_shell_surface *C.struct_wl_shell_surface, seat *C.struct_wl_seat, serial C.uint32_t, edges enum_wl_shell_surface_resize) {
+	C.gamen_wl_shell_surface_resize(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, seat, serial, C.uint32_t(edges))
 }
 
 // make the surface a toplevel surface
@@ -832,8 +832,8 @@ func (l *wl_library) wl_shell_surface_set_toplevel(wl_shell_surface *C.struct_wl
 // parent surface, in surface-local coordinates.
 //
 // The flags argument controls details of the transient behaviour.
-func (l *wl_library) wl_shell_surface_set_transient(wl_shell_surface *C.struct_wl_shell_surface, parent *C.struct_wl_surface, x, y C.int32_t, flags C.uint32_t) {
-	C.gamen_wl_shell_surface_set_transient(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, parent, x, y, flags)
+func (l *wl_library) wl_shell_surface_set_transient(wl_shell_surface *C.struct_wl_shell_surface, parent *C.struct_wl_surface, x, y C.int32_t, flags enum_wl_shell_surface_transient) {
+	C.gamen_wl_shell_surface_set_transient(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, parent, x, y, C.uint32_t(flags))
 }
 
 // make the surface a fullscreen surface
@@ -871,8 +871,8 @@ func (l *wl_library) wl_shell_surface_set_transient(wl_shell_surface *C.struct_w
 // The compositor must reply to this request with a configure event
 // with the dimensions for the output on which the surface will
 // be made fullscreen.
-func (l *wl_library) wl_shell_surface_set_fullscreen(wl_shell_surface *C.struct_wl_shell_surface, method, framerate C.uint32_t, output *C.struct_wl_output) {
-	C.gamen_wl_shell_surface_set_fullscreen(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, method, framerate, output)
+func (l *wl_library) wl_shell_surface_set_fullscreen(wl_shell_surface *C.struct_wl_shell_surface, method enum_wl_shell_surface_fullscreen_method, framerate C.uint32_t, output *C.struct_wl_output) {
+	C.gamen_wl_shell_surface_set_fullscreen(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, C.uint32_t(method), framerate, output)
 }
 
 // make the surface a popup surface
@@ -896,8 +896,8 @@ func (l *wl_library) wl_shell_surface_set_fullscreen(wl_shell_surface *C.struct_
 // The x and y arguments specify the location of the upper left
 // corner of the surface relative to the upper left corner of the
 // parent surface, in surface-local coordinates.
-func (l *wl_library) wl_shell_surface_set_popup(wl_shell_surface *C.struct_wl_shell_surface, seat *C.struct_wl_seat, serial C.uint32_t, parent *C.struct_wl_surface, x, y C.int32_t, flags C.uint32_t) {
-	C.gamen_wl_shell_surface_set_popup(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, seat, serial, parent, x, y, flags)
+func (l *wl_library) wl_shell_surface_set_popup(wl_shell_surface *C.struct_wl_shell_surface, seat *C.struct_wl_seat, serial C.uint32_t, parent *C.struct_wl_surface, x, y C.int32_t, flags enum_wl_shell_surface_transient) {
+	C.gamen_wl_shell_surface_set_popup(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_shell_surface, seat, serial, parent, x, y, C.uint32_t(flags))
 }
 
 // make the surface a maximized surface
@@ -954,17 +954,17 @@ func (l *wl_library) wl_shell_surface_destroy(wl_shell_surface *C.struct_wl_shel
 }
 
 // These errors can be emitted in response to wl_surface requests.
-type wl_surface_error C.uint32_t
+type enum_wl_surface_error C.uint32_t
 
 const (
 	// buffer scale value is invalid
-	WL_SURFACE_ERROR_INVALID_SCALE wl_surface_error = 0
+	WL_SURFACE_ERROR_INVALID_SCALE enum_wl_surface_error = 0
 	// buffer transform value is invalid
-	WL_SURFACE_ERROR_INVALID_TRANSFORM wl_surface_error = 1
+	WL_SURFACE_ERROR_INVALID_TRANSFORM enum_wl_surface_error = 1
 	// buffer size is invalid
-	WL_SURFACE_ERROR_INVALID_SIZE wl_surface_error = 2
+	WL_SURFACE_ERROR_INVALID_SIZE enum_wl_surface_error = 2
 	// buffer offset is invalid
-	WL_SURFACE_ERROR_INVALID_OFFSET wl_surface_error = 3
+	WL_SURFACE_ERROR_INVALID_OFFSET enum_wl_surface_error = 3
 )
 
 func (l *wl_library) wl_surface_add_listener(wl_surface *C.struct_wl_surface, listener *C.struct_wl_surface_listener, data unsafe.Pointer) C.int {
@@ -1217,8 +1217,8 @@ func (l *wl_library) wl_surface_commit(wl_surface *C.struct_wl_surface) {
 // If transform is not one of the values from the
 // wl_output.transform enum the invalid_transform protocol error
 // is raised.
-func (l *wl_library) wl_surface_set_buffer_transform(wl_surface *C.struct_wl_surface, transform C.int32_t) {
-	C.gamen_wl_surface_set_buffer_transform(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_surface, transform)
+func (l *wl_library) wl_surface_set_buffer_transform(wl_surface *C.struct_wl_surface, transform enum_wl_output_transform) {
+	C.gamen_wl_surface_set_buffer_transform(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_surface, C.int32_t(transform))
 }
 
 // sets the buffer scaling factor
@@ -1308,23 +1308,23 @@ func (l *wl_library) wl_surface_offset(wl_surface *C.struct_wl_surface, x, y C.i
 
 // This is a bitmask of capabilities this seat has; if a member is
 // set, then it is present on the seat.
-type wl_seat_capability C.uint32_t
+type enum_wl_seat_capability C.uint32_t
 
 const (
 	// the seat has pointer devices
-	WL_SEAT_CAPABILITY_POINTER wl_seat_capability = 1
+	WL_SEAT_CAPABILITY_POINTER enum_wl_seat_capability = 1
 	// the seat has one or more keyboards
-	WL_SEAT_CAPABILITY_KEYBOARD wl_seat_capability = 2
+	WL_SEAT_CAPABILITY_KEYBOARD enum_wl_seat_capability = 2
 	// the seat has touch devices
-	WL_SEAT_CAPABILITY_TOUCH wl_seat_capability = 4
+	WL_SEAT_CAPABILITY_TOUCH enum_wl_seat_capability = 4
 )
 
 // These errors can be emitted in response to wl_seat requests.
-type wl_seat_error C.uint32_t
+type enum_wl_seat_error C.uint32_t
 
 const (
 	// get_pointer, get_keyboard or get_touch called on seat without the matching capability
-	WL_SEAT_ERROR_MISSING_CAPABILITY wl_seat_error = 0
+	WL_SEAT_ERROR_MISSING_CAPABILITY enum_wl_seat_error = 0
 )
 
 func (l *wl_library) wl_seat_add_listener(wl_seat *C.struct_wl_seat, listener *C.struct_wl_seat_listener, data unsafe.Pointer) C.int {
@@ -1385,32 +1385,32 @@ func (l *wl_library) wl_seat_destroy(wl_seat *C.struct_wl_seat) {
 	l.wl_proxy_destroy((*C.struct_wl_proxy)(wl_seat))
 }
 
-type wl_pointer_error C.uint32_t
+type enum_wl_pointer_error C.uint32_t
 
 const (
 	// given wl_surface has another role
-	WL_POINTER_ERROR_ROLE wl_pointer_error = 0
+	WL_POINTER_ERROR_ROLE enum_wl_pointer_error = 0
 )
 
 // Describes the physical state of a button that produced the button
 // event.
-type wl_pointer_button_state C.uint32_t
+type enum_wl_pointer_button_state C.uint32_t
 
 const (
 	// the button is not pressed
-	WL_POINTER_BUTTON_STATE_RELEASED wl_pointer_button_state = 0
+	WL_POINTER_BUTTON_STATE_RELEASED enum_wl_pointer_button_state = 0
 	// the button is pressed
-	WL_POINTER_BUTTON_STATE_PRESSED wl_pointer_button_state = 1
+	WL_POINTER_BUTTON_STATE_PRESSED enum_wl_pointer_button_state = 1
 )
 
 // Describes the axis types of scroll events.
-type wl_pointer_axis C.uint32_t
+type enum_wl_pointer_axis C.uint32_t
 
 const (
 	// vertical axis
-	WL_POINTER_AXIS_VERTICAL_SCROLL wl_pointer_axis = 0
+	WL_POINTER_AXIS_VERTICAL_SCROLL enum_wl_pointer_axis = 0
 	// horizontal axis
-	WL_POINTER_AXIS_HORIZONTAL_SCROLL wl_pointer_axis = 1
+	WL_POINTER_AXIS_HORIZONTAL_SCROLL enum_wl_pointer_axis = 1
 )
 
 // Describes the source types for axis events. This indicates to the
@@ -1429,17 +1429,17 @@ const (
 // The "wheel tilt" axis source indicates that the actual device is a
 // wheel but the scroll event is not caused by a rotation but a
 // (usually sideways) tilt of the wheel.
-type wl_pointer_axis_source C.uint32_t
+type enum_wl_pointer_axis_source C.uint32_t
 
 const (
 	// a physical wheel rotation
-	WL_POINTER_AXIS_SOURCE_WHEEL wl_pointer_axis_source = 0
+	WL_POINTER_AXIS_SOURCE_WHEEL enum_wl_pointer_axis_source = 0
 	// finger on a touch surface
-	WL_POINTER_AXIS_SOURCE_FINGER wl_pointer_axis_source = 1
+	WL_POINTER_AXIS_SOURCE_FINGER enum_wl_pointer_axis_source = 1
 	// continuous coordinate space
-	WL_POINTER_AXIS_SOURCE_CONTINUOUS wl_pointer_axis_source = 2
+	WL_POINTER_AXIS_SOURCE_CONTINUOUS enum_wl_pointer_axis_source = 2
 	// a physical wheel tilt
-	WL_POINTER_AXIS_SOURCE_WHEEL_TILT wl_pointer_axis_source = 3
+	WL_POINTER_AXIS_SOURCE_WHEEL_TILT enum_wl_pointer_axis_source = 3
 )
 
 func (l *wl_library) wl_pointer_add_listener(wl_pointer *C.struct_wl_pointer, listener *C.struct_wl_pointer_listener, data unsafe.Pointer) C.int {
@@ -1504,23 +1504,23 @@ func (l *wl_library) wl_pointer_destroy(wl_pointer *C.struct_wl_pointer) {
 
 // This specifies the format of the keymap provided to the
 // client with the wl_keyboard.keymap event.
-type wl_keyboard_keymap_format C.uint32_t
+type enum_wl_keyboard_keymap_format C.uint32_t
 
 const (
 	// no keymap; client must understand how to interpret the raw keycode
-	WL_KEYBOARD_KEYMAP_FORMAT_NO_KEYMAP wl_keyboard_keymap_format = 0
+	WL_KEYBOARD_KEYMAP_FORMAT_NO_KEYMAP enum_wl_keyboard_keymap_format = 0
 	// libxkbcommon compatible, null-terminated string; to determine the xkb keycode, clients must add 8 to the key event keycode
-	WL_KEYBOARD_KEYMAP_FORMAT_XKB_V_1 wl_keyboard_keymap_format = 1
+	WL_KEYBOARD_KEYMAP_FORMAT_XKB_V_1 enum_wl_keyboard_keymap_format = 1
 )
 
 // Describes the physical state of a key that produced the key event.
-type wl_keyboard_key_state C.uint32_t
+type enum_wl_keyboard_key_state C.uint32_t
 
 const (
 	// key is not pressed
-	WL_KEYBOARD_KEY_STATE_RELEASED wl_keyboard_key_state = 0
+	WL_KEYBOARD_KEY_STATE_RELEASED enum_wl_keyboard_key_state = 0
 	// key is pressed
-	WL_KEYBOARD_KEY_STATE_PRESSED wl_keyboard_key_state = 1
+	WL_KEYBOARD_KEY_STATE_PRESSED enum_wl_keyboard_key_state = 1
 )
 
 func (l *wl_library) wl_keyboard_add_listener(wl_keyboard *C.struct_wl_keyboard, listener *C.struct_wl_keyboard_listener, data unsafe.Pointer) C.int {
@@ -1551,21 +1551,21 @@ func (l *wl_library) wl_touch_destroy(wl_touch *C.struct_wl_touch) {
 
 // This enumeration describes how the physical
 // pixels on an output are laid out.
-type wl_output_subpixel C.uint32_t
+type enum_wl_output_subpixel C.uint32_t
 
 const (
 	// unknown geometry
-	WL_OUTPUT_SUBPIXEL_UNKNOWN wl_output_subpixel = 0
+	WL_OUTPUT_SUBPIXEL_UNKNOWN enum_wl_output_subpixel = 0
 	// no geometry
-	WL_OUTPUT_SUBPIXEL_NONE wl_output_subpixel = 1
+	WL_OUTPUT_SUBPIXEL_NONE enum_wl_output_subpixel = 1
 	// horizontal RGB
-	WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB wl_output_subpixel = 2
+	WL_OUTPUT_SUBPIXEL_HORIZONTAL_RGB enum_wl_output_subpixel = 2
 	// horizontal BGR
-	WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR wl_output_subpixel = 3
+	WL_OUTPUT_SUBPIXEL_HORIZONTAL_BGR enum_wl_output_subpixel = 3
 	// vertical RGB
-	WL_OUTPUT_SUBPIXEL_VERTICAL_RGB wl_output_subpixel = 4
+	WL_OUTPUT_SUBPIXEL_VERTICAL_RGB enum_wl_output_subpixel = 4
 	// vertical BGR
-	WL_OUTPUT_SUBPIXEL_VERTICAL_BGR wl_output_subpixel = 5
+	WL_OUTPUT_SUBPIXEL_VERTICAL_BGR enum_wl_output_subpixel = 5
 )
 
 // This describes the transform that a compositor will apply to a
@@ -1579,36 +1579,36 @@ const (
 // tell the compositor, so that for fullscreen surfaces, the
 // compositor will still be able to scan out directly from client
 // surfaces.
-type wl_output_transform C.uint32_t
+type enum_wl_output_transform C.uint32_t
 
 const (
 	// no transform
-	WL_OUTPUT_TRANSFORM_NORMAL wl_output_transform = 0
+	WL_OUTPUT_TRANSFORM_NORMAL enum_wl_output_transform = 0
 	// 90 degrees counter-clockwise
-	WL_OUTPUT_TRANSFORM_90 wl_output_transform = 1
+	WL_OUTPUT_TRANSFORM_90 enum_wl_output_transform = 1
 	// 180 degrees counter-clockwise
-	WL_OUTPUT_TRANSFORM_180 wl_output_transform = 2
+	WL_OUTPUT_TRANSFORM_180 enum_wl_output_transform = 2
 	// 270 degrees counter-clockwise
-	WL_OUTPUT_TRANSFORM_270 wl_output_transform = 3
+	WL_OUTPUT_TRANSFORM_270 enum_wl_output_transform = 3
 	// 180 degree flip around a vertical axis
-	WL_OUTPUT_TRANSFORM_FLIPPED wl_output_transform = 4
+	WL_OUTPUT_TRANSFORM_FLIPPED enum_wl_output_transform = 4
 	// flip and rotate 90 degrees counter-clockwise
-	WL_OUTPUT_TRANSFORM_FLIPPED_90 wl_output_transform = 5
+	WL_OUTPUT_TRANSFORM_FLIPPED_90 enum_wl_output_transform = 5
 	// flip and rotate 180 degrees counter-clockwise
-	WL_OUTPUT_TRANSFORM_FLIPPED_180 wl_output_transform = 6
+	WL_OUTPUT_TRANSFORM_FLIPPED_180 enum_wl_output_transform = 6
 	// flip and rotate 270 degrees counter-clockwise
-	WL_OUTPUT_TRANSFORM_FLIPPED_270 wl_output_transform = 7
+	WL_OUTPUT_TRANSFORM_FLIPPED_270 enum_wl_output_transform = 7
 )
 
 // These flags describe properties of an output mode.
 // They are used in the flags bitfield of the mode event.
-type wl_output_mode C.uint32_t
+type enum_wl_output_mode C.uint32_t
 
 const (
 	// indicates this is the current mode
-	WL_OUTPUT_MODE_CURRENT wl_output_mode = 0x1
+	WL_OUTPUT_MODE_CURRENT enum_wl_output_mode = 0x1
 	// indicates this is the preferred mode
-	WL_OUTPUT_MODE_PREFERRED wl_output_mode = 0x2
+	WL_OUTPUT_MODE_PREFERRED enum_wl_output_mode = 0x2
 )
 
 func (l *wl_library) wl_output_add_listener(wl_output *C.struct_wl_output, listener *C.struct_wl_output_listener, data unsafe.Pointer) C.int {
@@ -1648,11 +1648,11 @@ func (l *wl_library) wl_region_subtract(wl_region *C.struct_wl_region, x, y, wid
 	C.gamen_wl_region_subtract(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_region, x, y, width, height)
 }
 
-type wl_subcompositor_error C.uint32_t
+type enum_wl_subcompositor_error C.uint32_t
 
 const (
 	// the to-be sub-surface is invalid
-	WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE wl_subcompositor_error = 0
+	WL_SUBCOMPOSITOR_ERROR_BAD_SURFACE enum_wl_subcompositor_error = 0
 )
 
 // unbind from the subcompositor interface
@@ -1685,11 +1685,11 @@ func (l *wl_library) wl_subcompositor_get_subsurface(wl_subcompositor *C.struct_
 	return C.gamen_wl_subcompositor_get_subsurface(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, wl_subcompositor, surface, parent)
 }
 
-type wl_subsurface_error C.uint32_t
+type enum_wl_subsurface_error C.uint32_t
 
 const (
 	// wl_surface is not a sibling or the parent
-	WL_SUBSURFACE_ERROR_BAD_SURFACE wl_subsurface_error = 0
+	WL_SUBSURFACE_ERROR_BAD_SURFACE enum_wl_subsurface_error = 0
 )
 
 // remove sub-surface interface

@@ -95,7 +95,7 @@ func NewWindow(d *Display) (*Window, error) {
 	if d.xdgDecorationManager != nil {
 		w.xdgToplevelDecoration = d.l.zxdg_decoration_manager_v1_get_toplevel_decoration(d.xdgDecorationManager, w.xdgToplevel)
 		d.l.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.gamen_zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
-		d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.uint32_t(ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE))
+		d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE)
 	}
 
 	d.l.wl_surface_commit(w.surface)
@@ -359,12 +359,12 @@ func (w *Window) SetDecorations(decorate bool) {
 		if w.d.xdgDecorationManager != nil && w.xdgToplevelDecoration == nil {
 			w.xdgToplevelDecoration = w.d.l.zxdg_decoration_manager_v1_get_toplevel_decoration(w.d.xdgDecorationManager, w.xdgToplevel)
 			w.d.l.zxdg_toplevel_decoration_v1_add_listener(w.xdgToplevelDecoration, &C.gamen_zxdg_toplevel_decoration_v1_listener, unsafe.Pointer(w.handle))
-			w.d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.uint32_t(ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE))
+			w.d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE)
 			w.d.l.wl_surface_commit(w.surface)
 		}
 	} else {
 		if w.d.xdgDecorationManager != nil && w.xdgToplevelDecoration != nil {
-			w.d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, C.uint32_t(ZXDG_TOPLEVEL_DECORATION_V_1_MODE_CLIENT_SIDE))
+			w.d.l.zxdg_toplevel_decoration_v1_set_mode(w.xdgToplevelDecoration, ZXDG_TOPLEVEL_DECORATION_V_1_MODE_CLIENT_SIDE)
 			w.d.l.zxdg_toplevel_decoration_v1_destroy(w.xdgToplevelDecoration)
 			w.xdgToplevelDecoration = nil
 			w.d.l.wl_surface_commit(w.surface)
@@ -530,7 +530,7 @@ func xdgToplevelHandleConfigure(data unsafe.Pointer, xdg_toplevel *C.struct_xdg_
 	maximized := false
 	fullscreen := false
 
-	for _, state := range castWlArrayToSlice[xdg_toplevel_state](states) {
+	for _, state := range castWlArrayToSlice[enum_xdg_toplevel_state](states) {
 		switch state {
 		case XDG_TOPLEVEL_STATE_MAXIMIZED:
 			maximized = true

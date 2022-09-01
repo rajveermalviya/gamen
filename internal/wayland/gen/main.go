@@ -319,11 +319,11 @@ func emitGoSource() {
 	for _, iface := range protocol.Interfaces {
 		for _, enum := range iface.Enums {
 			fmt.Fprint(w, comment(enum.Description.Text))
-			fmt.Fprintf(w, "type %s_%s C.uint32_t\n", iface.Name, enum.Name)
+			fmt.Fprintf(w, "type enum_%s_%s C.uint32_t\n", iface.Name, enum.Name)
 			fmt.Fprintf(w, "const (\n")
 			for _, entry := range enum.Entries {
 				fmt.Fprint(w, comment(entry.Summary))
-				fmt.Fprintf(w, "	%s %s_%s = %s\n", strcase.ToScreamingSnake(iface.Name+"_"+enum.Name+"_"+entry.Name), iface.Name, enum.Name, entry.Value)
+				fmt.Fprintf(w, "	%s enum_%s_%s = %s\n", strcase.ToScreamingSnake(iface.Name+"_"+enum.Name+"_"+entry.Name), iface.Name, enum.Name, entry.Value)
 			}
 			fmt.Fprintf(w, ")\n")
 		}
@@ -355,15 +355,24 @@ func emitGoSource() {
 				}
 
 				var argName string
+				param := arg.Name
 
 				if arg.Type == "object" && arg.Interface != "" {
 					argName = arg.Name + " *C.struct_" + arg.Interface
+				} else if arg.Enum != "" {
+					split := strings.Split(arg.Enum, ".")
+					if len(split) == 1 {
+						argName = fmt.Sprintf("%s enum_%s_%s", arg.Name, iface.Name, arg.Enum)
+					} else {
+						argName = fmt.Sprintf("%s enum_%s", arg.Name, strings.Join(split, "_"))
+					}
+					param = fmt.Sprintf("%s(%s)", typeToCGOTypeMap[arg.Type], arg.Name)
 				} else {
 					argName = arg.Name + " " + typeToCGOTypeMap[arg.Type]
 				}
 
 				args = append(args, argName)
-				params = append(params, arg.Name)
+				params = append(params, param)
 			}
 
 			fmt.Fprint(w, comment(req.Description.Summary))
