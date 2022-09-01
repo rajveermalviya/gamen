@@ -13,21 +13,21 @@ package wayland
 import "C"
 import "unsafe"
 
-type xdg_wm_base_error C.uint32_t
+type enum_xdg_wm_base_error C.uint32_t
 
 const (
 	// given wl_surface has another role
-	XDG_WM_BASE_ERROR_ROLE xdg_wm_base_error = 0
+	XDG_WM_BASE_ERROR_ROLE enum_xdg_wm_base_error = 0
 	// xdg_wm_base was destroyed before children
-	XDG_WM_BASE_ERROR_DEFUNCT_SURFACES xdg_wm_base_error = 1
+	XDG_WM_BASE_ERROR_DEFUNCT_SURFACES enum_xdg_wm_base_error = 1
 	// the client tried to map or destroy a non-topmost popup
-	XDG_WM_BASE_ERROR_NOT_THE_TOPMOST_POPUP xdg_wm_base_error = 2
+	XDG_WM_BASE_ERROR_NOT_THE_TOPMOST_POPUP enum_xdg_wm_base_error = 2
 	// the client specified an invalid popup parent surface
-	XDG_WM_BASE_ERROR_INVALID_POPUP_PARENT xdg_wm_base_error = 3
+	XDG_WM_BASE_ERROR_INVALID_POPUP_PARENT enum_xdg_wm_base_error = 3
 	// the client provided an invalid surface state
-	XDG_WM_BASE_ERROR_INVALID_SURFACE_STATE xdg_wm_base_error = 4
+	XDG_WM_BASE_ERROR_INVALID_SURFACE_STATE enum_xdg_wm_base_error = 4
 	// the client provided an invalid positioner
-	XDG_WM_BASE_ERROR_INVALID_POSITIONER xdg_wm_base_error = 5
+	XDG_WM_BASE_ERROR_INVALID_POSITIONER enum_xdg_wm_base_error = 5
 )
 
 func (l *wl_library) xdg_wm_base_add_listener(xdg_wm_base *C.struct_xdg_wm_base, listener *C.struct_xdg_wm_base_listener, data unsafe.Pointer) C.int {
@@ -81,39 +81,39 @@ func (l *wl_library) xdg_wm_base_pong(xdg_wm_base *C.struct_xdg_wm_base, serial 
 	C.gamen_xdg_wm_base_pong(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_wm_base, serial)
 }
 
-type xdg_positioner_error C.uint32_t
+type enum_xdg_positioner_error C.uint32_t
 
 const (
 	// invalid input provided
-	XDG_POSITIONER_ERROR_INVALID_INPUT xdg_positioner_error = 0
+	XDG_POSITIONER_ERROR_INVALID_INPUT enum_xdg_positioner_error = 0
 )
 
-type xdg_positioner_anchor C.uint32_t
+type enum_xdg_positioner_anchor C.uint32_t
 
 const (
-	XDG_POSITIONER_ANCHOR_NONE         xdg_positioner_anchor = 0
-	XDG_POSITIONER_ANCHOR_TOP          xdg_positioner_anchor = 1
-	XDG_POSITIONER_ANCHOR_BOTTOM       xdg_positioner_anchor = 2
-	XDG_POSITIONER_ANCHOR_LEFT         xdg_positioner_anchor = 3
-	XDG_POSITIONER_ANCHOR_RIGHT        xdg_positioner_anchor = 4
-	XDG_POSITIONER_ANCHOR_TOP_LEFT     xdg_positioner_anchor = 5
-	XDG_POSITIONER_ANCHOR_BOTTOM_LEFT  xdg_positioner_anchor = 6
-	XDG_POSITIONER_ANCHOR_TOP_RIGHT    xdg_positioner_anchor = 7
-	XDG_POSITIONER_ANCHOR_BOTTOM_RIGHT xdg_positioner_anchor = 8
+	XDG_POSITIONER_ANCHOR_NONE         enum_xdg_positioner_anchor = 0
+	XDG_POSITIONER_ANCHOR_TOP          enum_xdg_positioner_anchor = 1
+	XDG_POSITIONER_ANCHOR_BOTTOM       enum_xdg_positioner_anchor = 2
+	XDG_POSITIONER_ANCHOR_LEFT         enum_xdg_positioner_anchor = 3
+	XDG_POSITIONER_ANCHOR_RIGHT        enum_xdg_positioner_anchor = 4
+	XDG_POSITIONER_ANCHOR_TOP_LEFT     enum_xdg_positioner_anchor = 5
+	XDG_POSITIONER_ANCHOR_BOTTOM_LEFT  enum_xdg_positioner_anchor = 6
+	XDG_POSITIONER_ANCHOR_TOP_RIGHT    enum_xdg_positioner_anchor = 7
+	XDG_POSITIONER_ANCHOR_BOTTOM_RIGHT enum_xdg_positioner_anchor = 8
 )
 
-type xdg_positioner_gravity C.uint32_t
+type enum_xdg_positioner_gravity C.uint32_t
 
 const (
-	XDG_POSITIONER_GRAVITY_NONE         xdg_positioner_gravity = 0
-	XDG_POSITIONER_GRAVITY_TOP          xdg_positioner_gravity = 1
-	XDG_POSITIONER_GRAVITY_BOTTOM       xdg_positioner_gravity = 2
-	XDG_POSITIONER_GRAVITY_LEFT         xdg_positioner_gravity = 3
-	XDG_POSITIONER_GRAVITY_RIGHT        xdg_positioner_gravity = 4
-	XDG_POSITIONER_GRAVITY_TOP_LEFT     xdg_positioner_gravity = 5
-	XDG_POSITIONER_GRAVITY_BOTTOM_LEFT  xdg_positioner_gravity = 6
-	XDG_POSITIONER_GRAVITY_TOP_RIGHT    xdg_positioner_gravity = 7
-	XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT xdg_positioner_gravity = 8
+	XDG_POSITIONER_GRAVITY_NONE         enum_xdg_positioner_gravity = 0
+	XDG_POSITIONER_GRAVITY_TOP          enum_xdg_positioner_gravity = 1
+	XDG_POSITIONER_GRAVITY_BOTTOM       enum_xdg_positioner_gravity = 2
+	XDG_POSITIONER_GRAVITY_LEFT         enum_xdg_positioner_gravity = 3
+	XDG_POSITIONER_GRAVITY_RIGHT        enum_xdg_positioner_gravity = 4
+	XDG_POSITIONER_GRAVITY_TOP_LEFT     enum_xdg_positioner_gravity = 5
+	XDG_POSITIONER_GRAVITY_BOTTOM_LEFT  enum_xdg_positioner_gravity = 6
+	XDG_POSITIONER_GRAVITY_TOP_RIGHT    enum_xdg_positioner_gravity = 7
+	XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT enum_xdg_positioner_gravity = 8
 )
 
 // The constraint adjustment value define ways the compositor will adjust
@@ -127,16 +127,16 @@ const (
 //
 // The adjustments can be combined, according to a defined precedence: 1)
 // Flip, 2) Slide, 3) Resize.
-type xdg_positioner_constraint_adjustment C.uint32_t
+type enum_xdg_positioner_constraint_adjustment C.uint32_t
 
 const (
-	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_NONE     xdg_positioner_constraint_adjustment = 0
-	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X  xdg_positioner_constraint_adjustment = 1
-	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y  xdg_positioner_constraint_adjustment = 2
-	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X   xdg_positioner_constraint_adjustment = 4
-	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y   xdg_positioner_constraint_adjustment = 8
-	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_RESIZE_X xdg_positioner_constraint_adjustment = 16
-	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_RESIZE_Y xdg_positioner_constraint_adjustment = 32
+	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_NONE     enum_xdg_positioner_constraint_adjustment = 0
+	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_X  enum_xdg_positioner_constraint_adjustment = 1
+	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_SLIDE_Y  enum_xdg_positioner_constraint_adjustment = 2
+	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_X   enum_xdg_positioner_constraint_adjustment = 4
+	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_FLIP_Y   enum_xdg_positioner_constraint_adjustment = 8
+	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_RESIZE_X enum_xdg_positioner_constraint_adjustment = 16
+	XDG_POSITIONER_CONSTRAINT_ADJUSTMENT_RESIZE_Y enum_xdg_positioner_constraint_adjustment = 32
 )
 
 // destroy the xdg_positioner object
@@ -181,8 +181,8 @@ func (l *wl_library) xdg_positioner_set_anchor_rect(xdg_positioner *C.struct_xdg
 // 'bottom_right'), the anchor point will be at the specified corner;
 // otherwise, the derived anchor point will be centered on the specified
 // edge, or in the center of the anchor rectangle if no edge is specified.
-func (l *wl_library) xdg_positioner_set_anchor(xdg_positioner *C.struct_xdg_positioner, anchor C.uint32_t) {
-	C.gamen_xdg_positioner_set_anchor(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_positioner, anchor)
+func (l *wl_library) xdg_positioner_set_anchor(xdg_positioner *C.struct_xdg_positioner, anchor enum_xdg_positioner_anchor) {
+	C.gamen_xdg_positioner_set_anchor(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_positioner, C.uint32_t(anchor))
 }
 
 // set child surface gravity
@@ -193,8 +193,8 @@ func (l *wl_library) xdg_positioner_set_anchor(xdg_positioner *C.struct_xdg_posi
 // will be placed towards the specified gravity; otherwise, the child
 // surface will be centered over the anchor point on any axis that had no
 // gravity specified.
-func (l *wl_library) xdg_positioner_set_gravity(xdg_positioner *C.struct_xdg_positioner, gravity C.uint32_t) {
-	C.gamen_xdg_positioner_set_gravity(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_positioner, gravity)
+func (l *wl_library) xdg_positioner_set_gravity(xdg_positioner *C.struct_xdg_positioner, gravity enum_xdg_positioner_gravity) {
+	C.gamen_xdg_positioner_set_gravity(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_positioner, C.uint32_t(gravity))
 }
 
 // set the adjustment to be done when constrained
@@ -266,12 +266,12 @@ func (l *wl_library) xdg_positioner_set_parent_configure(xdg_positioner *C.struc
 	C.gamen_xdg_positioner_set_parent_configure(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_positioner, serial)
 }
 
-type xdg_surface_error C.uint32_t
+type enum_xdg_surface_error C.uint32_t
 
 const (
-	XDG_SURFACE_ERROR_NOT_CONSTRUCTED     xdg_surface_error = 1
-	XDG_SURFACE_ERROR_ALREADY_CONSTRUCTED xdg_surface_error = 2
-	XDG_SURFACE_ERROR_UNCONFIGURED_BUFFER xdg_surface_error = 3
+	XDG_SURFACE_ERROR_NOT_CONSTRUCTED     enum_xdg_surface_error = 1
+	XDG_SURFACE_ERROR_ALREADY_CONSTRUCTED enum_xdg_surface_error = 2
+	XDG_SURFACE_ERROR_UNCONFIGURED_BUFFER enum_xdg_surface_error = 3
 )
 
 func (l *wl_library) xdg_surface_add_listener(xdg_surface *C.struct_xdg_surface, listener *C.struct_xdg_surface_listener, data unsafe.Pointer) C.int {
@@ -371,28 +371,28 @@ func (l *wl_library) xdg_surface_ack_configure(xdg_surface *C.struct_xdg_surface
 	C.gamen_xdg_surface_ack_configure(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_surface, serial)
 }
 
-type xdg_toplevel_error C.uint32_t
+type enum_xdg_toplevel_error C.uint32_t
 
 const (
 	// provided value is
 	// not a valid variant of the resize_edge enum
-	XDG_TOPLEVEL_ERROR_INVALID_RESIZE_EDGE xdg_toplevel_error = 0
+	XDG_TOPLEVEL_ERROR_INVALID_RESIZE_EDGE enum_xdg_toplevel_error = 0
 )
 
 // These values are used to indicate which edge of a surface
 // is being dragged in a resize operation.
-type xdg_toplevel_resize_edge C.uint32_t
+type enum_xdg_toplevel_resize_edge C.uint32_t
 
 const (
-	XDG_TOPLEVEL_RESIZE_EDGE_NONE         xdg_toplevel_resize_edge = 0
-	XDG_TOPLEVEL_RESIZE_EDGE_TOP          xdg_toplevel_resize_edge = 1
-	XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM       xdg_toplevel_resize_edge = 2
-	XDG_TOPLEVEL_RESIZE_EDGE_LEFT         xdg_toplevel_resize_edge = 4
-	XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT     xdg_toplevel_resize_edge = 5
-	XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_LEFT  xdg_toplevel_resize_edge = 6
-	XDG_TOPLEVEL_RESIZE_EDGE_RIGHT        xdg_toplevel_resize_edge = 8
-	XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT    xdg_toplevel_resize_edge = 9
-	XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT xdg_toplevel_resize_edge = 10
+	XDG_TOPLEVEL_RESIZE_EDGE_NONE         enum_xdg_toplevel_resize_edge = 0
+	XDG_TOPLEVEL_RESIZE_EDGE_TOP          enum_xdg_toplevel_resize_edge = 1
+	XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM       enum_xdg_toplevel_resize_edge = 2
+	XDG_TOPLEVEL_RESIZE_EDGE_LEFT         enum_xdg_toplevel_resize_edge = 4
+	XDG_TOPLEVEL_RESIZE_EDGE_TOP_LEFT     enum_xdg_toplevel_resize_edge = 5
+	XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_LEFT  enum_xdg_toplevel_resize_edge = 6
+	XDG_TOPLEVEL_RESIZE_EDGE_RIGHT        enum_xdg_toplevel_resize_edge = 8
+	XDG_TOPLEVEL_RESIZE_EDGE_TOP_RIGHT    enum_xdg_toplevel_resize_edge = 9
+	XDG_TOPLEVEL_RESIZE_EDGE_BOTTOM_RIGHT enum_xdg_toplevel_resize_edge = 10
 )
 
 // The different state values used on the surface. This is designed for
@@ -402,34 +402,34 @@ const (
 //
 // States set in this way are double-buffered. They will get applied on
 // the next commit.
-type xdg_toplevel_state C.uint32_t
+type enum_xdg_toplevel_state C.uint32_t
 
 const (
 	// the surface is maximized
-	XDG_TOPLEVEL_STATE_MAXIMIZED xdg_toplevel_state = 1
+	XDG_TOPLEVEL_STATE_MAXIMIZED enum_xdg_toplevel_state = 1
 	// the surface is fullscreen
-	XDG_TOPLEVEL_STATE_FULLSCREEN xdg_toplevel_state = 2
+	XDG_TOPLEVEL_STATE_FULLSCREEN enum_xdg_toplevel_state = 2
 	// the surface is being resized
-	XDG_TOPLEVEL_STATE_RESIZING xdg_toplevel_state = 3
+	XDG_TOPLEVEL_STATE_RESIZING enum_xdg_toplevel_state = 3
 	// the surface is now activated
-	XDG_TOPLEVEL_STATE_ACTIVATED    xdg_toplevel_state = 4
-	XDG_TOPLEVEL_STATE_TILED_LEFT   xdg_toplevel_state = 5
-	XDG_TOPLEVEL_STATE_TILED_RIGHT  xdg_toplevel_state = 6
-	XDG_TOPLEVEL_STATE_TILED_TOP    xdg_toplevel_state = 7
-	XDG_TOPLEVEL_STATE_TILED_BOTTOM xdg_toplevel_state = 8
+	XDG_TOPLEVEL_STATE_ACTIVATED    enum_xdg_toplevel_state = 4
+	XDG_TOPLEVEL_STATE_TILED_LEFT   enum_xdg_toplevel_state = 5
+	XDG_TOPLEVEL_STATE_TILED_RIGHT  enum_xdg_toplevel_state = 6
+	XDG_TOPLEVEL_STATE_TILED_TOP    enum_xdg_toplevel_state = 7
+	XDG_TOPLEVEL_STATE_TILED_BOTTOM enum_xdg_toplevel_state = 8
 )
 
-type xdg_toplevel_wm_capabilities C.uint32_t
+type enum_xdg_toplevel_wm_capabilities C.uint32_t
 
 const (
 	// show_window_menu is available
-	XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU xdg_toplevel_wm_capabilities = 1
+	XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU enum_xdg_toplevel_wm_capabilities = 1
 	// set_maximized and unset_maximized are available
-	XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE xdg_toplevel_wm_capabilities = 2
+	XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE enum_xdg_toplevel_wm_capabilities = 2
 	// set_fullscreen and unset_fullscreen are available
-	XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN xdg_toplevel_wm_capabilities = 3
+	XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN enum_xdg_toplevel_wm_capabilities = 3
 	// set_minimized is available
-	XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE xdg_toplevel_wm_capabilities = 4
+	XDG_TOPLEVEL_WM_CAPABILITIES_MINIMIZE enum_xdg_toplevel_wm_capabilities = 4
 )
 
 func (l *wl_library) xdg_toplevel_add_listener(xdg_toplevel *C.struct_xdg_toplevel, listener *C.struct_xdg_toplevel_listener, data unsafe.Pointer) C.int {
@@ -580,8 +580,8 @@ func (l *wl_library) xdg_toplevel_move(xdg_toplevel *C.struct_xdg_toplevel, seat
 // when dragging the top left corner. The compositor may also use
 // this information to adapt its behavior, e.g. choose an appropriate
 // cursor image.
-func (l *wl_library) xdg_toplevel_resize(xdg_toplevel *C.struct_xdg_toplevel, seat *C.struct_wl_seat, serial, edges C.uint32_t) {
-	C.gamen_xdg_toplevel_resize(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_toplevel, seat, serial, edges)
+func (l *wl_library) xdg_toplevel_resize(xdg_toplevel *C.struct_xdg_toplevel, seat *C.struct_wl_seat, serial C.uint32_t, edges enum_xdg_toplevel_resize_edge) {
+	C.gamen_xdg_toplevel_resize(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_toplevel, seat, serial, C.uint32_t(edges))
 }
 
 // set the maximum size
@@ -782,11 +782,11 @@ func (l *wl_library) xdg_toplevel_set_minimized(xdg_toplevel *C.struct_xdg_tople
 	C.gamen_xdg_toplevel_set_minimized(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, xdg_toplevel)
 }
 
-type xdg_popup_error C.uint32_t
+type enum_xdg_popup_error C.uint32_t
 
 const (
 	// tried to grab after being mapped
-	XDG_POPUP_ERROR_INVALID_GRAB xdg_popup_error = 0
+	XDG_POPUP_ERROR_INVALID_GRAB enum_xdg_popup_error = 0
 )
 
 func (l *wl_library) xdg_popup_add_listener(xdg_popup *C.struct_xdg_popup, listener *C.struct_xdg_popup_listener, data unsafe.Pointer) C.int {

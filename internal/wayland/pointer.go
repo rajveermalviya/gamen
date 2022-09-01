@@ -298,7 +298,7 @@ func pointerHandleMotion(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, t
 }
 
 //export pointerHandleButton
-func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, serial C.uint32_t, time C.uint32_t, button C.uint32_t, state wl_pointer_button_state) {
+func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, serial C.uint32_t, time C.uint32_t, button C.uint32_t, state enum_wl_pointer_button_state) {
 	const (
 		BTN_LEFT   = 272
 		BTN_RIGHT  = 273
@@ -357,7 +357,7 @@ func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, s
 }
 
 //export pointerHandleAxis
-func pointerHandleAxis(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, time C.uint32_t, axis wl_pointer_axis, value C.double) {
+func pointerHandleAxis(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, time C.uint32_t, axis enum_wl_pointer_axis, value C.double) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
 		return
@@ -374,7 +374,7 @@ func pointerHandleAxis(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, tim
 }
 
 //export pointerHandleAxisDiscrete
-func pointerHandleAxisDiscrete(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, axis wl_pointer_axis, discrete C.int32_t) {
+func pointerHandleAxisDiscrete(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, axis enum_wl_pointer_axis, discrete C.int32_t) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
 		return

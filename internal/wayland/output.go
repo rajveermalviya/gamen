@@ -21,12 +21,12 @@ type Output struct {
 	// from geometry event
 	x, y                          int32
 	physicalWidth, physicalHeight int32
-	subpixel                      wl_output_subpixel
+	subpixel                      enum_wl_output_subpixel
 	make, model                   string
-	transform                     wl_output_transform
+	transform                     enum_wl_output_transform
 
 	// from mode event
-	flags         wl_output_mode
+	flags         enum_wl_output_mode
 	width, height int32
 	refresh       int32
 
@@ -37,9 +37,9 @@ type Output struct {
 func outputHandleGeometry(data unsafe.Pointer, wl_output *C.struct_wl_output,
 	x, y C.int32_t,
 	physical_width, physical_height C.int32_t,
-	subpixel C.int32_t,
+	subpixel enum_wl_output_subpixel,
 	make, model *C.char,
-	transform C.int32_t,
+	transform enum_wl_output_transform,
 ) {
 	d, ok := (*cgo.Handle)(data).Value().(*Display)
 	if !ok {
@@ -55,15 +55,15 @@ func outputHandleGeometry(data unsafe.Pointer, wl_output *C.struct_wl_output,
 	output.y = int32(y)
 	output.physicalWidth = int32(physical_width)
 	output.physicalHeight = int32(physical_height)
-	output.subpixel = wl_output_subpixel(subpixel)
+	output.subpixel = subpixel
 	output.make = C.GoString(make)
 	output.model = C.GoString(model)
-	output.transform = wl_output_transform(transform)
+	output.transform = transform
 }
 
 //export outputHandleMode
 func outputHandleMode(data unsafe.Pointer, wl_output *C.struct_wl_output,
-	flags C.uint32_t,
+	flags enum_wl_output_mode,
 	width, height C.int32_t,
 	refresh C.int32_t,
 ) {
@@ -77,7 +77,7 @@ func outputHandleMode(data unsafe.Pointer, wl_output *C.struct_wl_output,
 		return
 	}
 
-	output.flags = wl_output_mode(flags)
+	output.flags = flags
 	output.width = int32(width)
 	output.height = int32(height)
 	output.refresh = int32(refresh)

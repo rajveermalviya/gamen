@@ -34,25 +34,25 @@ func (l *wl_library) zxdg_decoration_manager_v1_get_toplevel_decoration(zxdg_dec
 	return C.gamen_zxdg_decoration_manager_v1_get_toplevel_decoration(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, zxdg_decoration_manager_v1, toplevel)
 }
 
-type zxdg_toplevel_decoration_v1_error C.uint32_t
+type enum_zxdg_toplevel_decoration_v1_error C.uint32_t
 
 const (
 	// xdg_toplevel has a buffer attached before configure
-	ZXDG_TOPLEVEL_DECORATION_V_1_ERROR_UNCONFIGURED_BUFFER zxdg_toplevel_decoration_v1_error = 0
+	ZXDG_TOPLEVEL_DECORATION_V_1_ERROR_UNCONFIGURED_BUFFER enum_zxdg_toplevel_decoration_v1_error = 0
 	// xdg_toplevel already has a decoration object
-	ZXDG_TOPLEVEL_DECORATION_V_1_ERROR_ALREADY_CONSTRUCTED zxdg_toplevel_decoration_v1_error = 1
+	ZXDG_TOPLEVEL_DECORATION_V_1_ERROR_ALREADY_CONSTRUCTED enum_zxdg_toplevel_decoration_v1_error = 1
 	// xdg_toplevel destroyed before the decoration object
-	ZXDG_TOPLEVEL_DECORATION_V_1_ERROR_ORPHANED zxdg_toplevel_decoration_v1_error = 2
+	ZXDG_TOPLEVEL_DECORATION_V_1_ERROR_ORPHANED enum_zxdg_toplevel_decoration_v1_error = 2
 )
 
 // These values describe window decoration modes.
-type zxdg_toplevel_decoration_v1_mode C.uint32_t
+type enum_zxdg_toplevel_decoration_v1_mode C.uint32_t
 
 const (
 	// no server-side window decoration
-	ZXDG_TOPLEVEL_DECORATION_V_1_MODE_CLIENT_SIDE zxdg_toplevel_decoration_v1_mode = 1
+	ZXDG_TOPLEVEL_DECORATION_V_1_MODE_CLIENT_SIDE enum_zxdg_toplevel_decoration_v1_mode = 1
 	// server-side window decoration
-	ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE zxdg_toplevel_decoration_v1_mode = 2
+	ZXDG_TOPLEVEL_DECORATION_V_1_MODE_SERVER_SIDE enum_zxdg_toplevel_decoration_v1_mode = 2
 )
 
 func (l *wl_library) zxdg_toplevel_decoration_v1_add_listener(zxdg_toplevel_decoration_v1 *C.struct_zxdg_toplevel_decoration_v1, listener *C.struct_zxdg_toplevel_decoration_v1_listener, data unsafe.Pointer) C.int {
@@ -87,8 +87,8 @@ func (l *wl_library) zxdg_toplevel_decoration_v1_destroy(zxdg_toplevel_decoratio
 // Such clients are responsible for preventing configure loops and must
 // make sure not to send multiple successive set_mode requests with the
 // same decoration mode.
-func (l *wl_library) zxdg_toplevel_decoration_v1_set_mode(zxdg_toplevel_decoration_v1 *C.struct_zxdg_toplevel_decoration_v1, mode C.uint32_t) {
-	C.gamen_zxdg_toplevel_decoration_v1_set_mode(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, zxdg_toplevel_decoration_v1, mode)
+func (l *wl_library) zxdg_toplevel_decoration_v1_set_mode(zxdg_toplevel_decoration_v1 *C.struct_zxdg_toplevel_decoration_v1, mode enum_zxdg_toplevel_decoration_v1_mode) {
+	C.gamen_zxdg_toplevel_decoration_v1_set_mode(l.wl_proxy_marshal_flags, l.wl_proxy_get_version, zxdg_toplevel_decoration_v1, C.uint32_t(mode))
 }
 
 // unset the decoration mode
