@@ -3,7 +3,6 @@
 package xcb
 
 import (
-	"errors"
 	"unsafe"
 
 	"golang.org/x/exp/constraints"
@@ -27,22 +26,11 @@ func hasXiMask(mask []C.uint32_t, bit C.uint16_t) bool {
 	return mask[bit>>3]&(1<<(bit&7)) != 0
 }
 
-func checkXInputVersion(conn *C.xcb_connection_t) error {
-	cookie := C.xcb_input_xi_query_version(conn, C.XCB_INPUT_MAJOR_VERSION, C.XCB_INPUT_MINOR_VERSION)
-	reply := C.xcb_input_xi_query_version_reply(conn, cookie, nil)
-	defer C.free(unsafe.Pointer(reply))
-
-	if reply.major_version >= 2 && reply.minor_version >= 1 {
-		return nil
-	}
-	return errors.New("xinput version not supported")
-}
-
-func internAtom(conn *C.xcb_connection_t, onlyIfExists bool, name string) C.xcb_atom_t {
+func (d *Display) internAtom(onlyIfExists bool, name string) C.xcb_atom_t {
 	nameStr := C.CString(name)
 	defer C.free(unsafe.Pointer(nameStr))
-	cookie := C.xcb_intern_atom(conn, Cbool[C.uint8_t](onlyIfExists), C.uint16_t(len(name)), nameStr)
-	reply := C.xcb_intern_atom_reply(conn, cookie, nil)
+	cookie := d.l.xcb_intern_atom(d.xcbConn, Cbool[C.uint8_t](onlyIfExists), C.uint16_t(len(name)), nameStr)
+	reply := d.l.xcb_intern_atom_reply(d.xcbConn, cookie, nil)
 	defer C.free(unsafe.Pointer(reply))
 	return reply.atom
 }

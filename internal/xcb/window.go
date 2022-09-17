@@ -56,7 +56,7 @@ type Window struct {
 }
 
 func NewWindow(d *Display) (*Window, error) {
-	win := C.xcb_generate_id(d.xcbConn)
+	win := d.l.xcb_generate_id(d.xcbConn)
 
 	// create window
 	{
@@ -73,7 +73,7 @@ func NewWindow(d *Display) (*Window, error) {
 				C.XCB_EVENT_MASK_KEY_RELEASE,
 		}
 
-		cookie := C.xcb_create_window_checked(d.xcbConn,
+		cookie := d.l.xcb_create_window_checked(d.xcbConn,
 			0,
 			win,
 			d.screens[0].xcbScreen.root,
@@ -84,7 +84,7 @@ func NewWindow(d *Display) (*Window, error) {
 			d.screens[0].xcbScreen.root_visual,
 			mask, unsafe.Pointer(&values),
 		)
-		err := C.xcb_request_check(d.xcbConn, cookie)
+		err := d.l.xcb_request_check(d.xcbConn, cookie)
 		if err != nil {
 			defer C.free(unsafe.Pointer(err))
 			return nil, errors.New("unable to create window")
@@ -93,7 +93,8 @@ func NewWindow(d *Display) (*Window, error) {
 
 	// opt into window close event
 	{
-		cookie := C.xcb_change_property_checked(
+		wmDeleteWindow := d.wmDeleteWindow
+		d.l.xcb_change_property(
 			d.xcbConn,
 			C.XCB_PROP_MODE_REPLACE,
 			win,
@@ -101,13 +102,8 @@ func NewWindow(d *Display) (*Window, error) {
 			C.XCB_ATOM_ATOM,
 			32,
 			1,
-			unsafe.Pointer(&d.wmDeleteWindow),
+			unsafe.Pointer(&wmDeleteWindow),
 		)
-		err := C.xcb_request_check(d.xcbConn, cookie)
-		if err != nil {
-			defer C.free(unsafe.Pointer(err))
-			return nil, errors.New("unable to set title")
-		}
 	}
 
 	// select xinput events
@@ -127,24 +123,7 @@ func NewWindow(d *Display) (*Window, error) {
 			C.XCB_INPUT_XI_EVENT_MASK_BUTTON_PRESS |
 			C.XCB_INPUT_XI_EVENT_MASK_BUTTON_RELEASE
 
-		cookie := C.xcb_input_xi_select_events_checked(d.xcbConn, win, 1, &mask.head)
-		err := C.xcb_request_check(d.xcbConn, cookie)
-		if err != nil {
-			defer C.free(unsafe.Pointer(err))
-			return nil, errors.New("unable to select xinput2 events")
-		}
-	}
-
-	setDecorations(d.xcbConn, win, d.motifWmHints, true)
-
-	// map window
-	{
-		cookie := C.xcb_map_window_checked(d.xcbConn, win)
-		err := C.xcb_request_check(d.xcbConn, cookie)
-		if err != nil {
-			defer C.free(unsafe.Pointer(err))
-			return nil, errors.New("unable to map window")
-		}
+		d.l.xcb_input_xi_select_events(d.xcbConn, win, 1, &mask.head)
 	}
 
 	w := &Window{
@@ -152,6 +131,19 @@ func NewWindow(d *Display) (*Window, error) {
 		win:               win,
 		currentCursorIcon: cursors.Default,
 	}
+
+	w.setDecorations(d.motifWmHints, true)
+
+	// map window
+	{
+		cookie := d.l.xcb_map_window_checked(d.xcbConn, win)
+		err := d.l.xcb_request_check(d.xcbConn, cookie)
+		if err != nil {
+			defer C.free(unsafe.Pointer(err))
+			return nil, errors.New("unable to map window")
+		}
+	}
+
 	d.windows[win] = w
 	return w, nil
 }
@@ -174,7 +166,7 @@ func (w *Window) SetTitle(title string) {
 	titlePtr := C.CString(title)
 	defer C.free(unsafe.Pointer(titlePtr))
 
-	C.xcb_change_property(
+	w.d.l.xcb_change_property(
 		w.d.xcbConn,
 		C.XCB_PROP_MODE_REPLACE,
 		w.win,
@@ -208,13 +200,13 @@ func (w *Window) Destroy() {
 			delete(w.d.windows, w.win)
 		}
 
-		C.xcb_destroy_window(w.d.xcbConn, w.win)
-		C.xcb_flush(w.d.xcbConn)
+		w.d.l.xcb_destroy_window(w.d.xcbConn, w.win)
+		w.d.l.xcb_flush(w.d.xcbConn)
 	})
 }
 
 func (w *Window) InnerSize() dpi.PhysicalSize[uint32] {
-	r := C.xcb_get_geometry_reply(w.d.xcbConn, C.xcb_get_geometry(w.d.xcbConn, w.win), nil)
+	r := w.d.l.xcb_get_geometry_reply(w.d.xcbConn, w.win)
 	if r == nil {
 		return dpi.PhysicalSize[uint32]{}
 	}
@@ -235,94 +227,63 @@ func (w *Window) SetInnerSize(size dpi.Size[uint32]) {
 		mathx.Max(1, mathx.Min(physicalSize.Height, math.MaxInt16)),
 	}
 
-	C.xcb_configure_window(w.d.xcbConn, w.win, mask, unsafe.Pointer(&values))
-	C.xcb_flush(w.d.xcbConn)
+	w.d.l.xcb_configure_window(w.d.xcbConn, w.win, mask, unsafe.Pointer(&values))
+	w.d.l.xcb_flush(w.d.xcbConn)
 }
 
 func (w *Window) SetMinInnerSize(size dpi.Size[uint32]) {
 	physicalSize := size.ToPhysical(1)
 
 	var hints C.xcb_size_hints_t
-
-	C.xcb_icccm_get_wm_size_hints_reply(
+	w.d.l.xcb_icccm_get_wm_normal_hints_reply(
 		w.d.xcbConn,
-		C.xcb_icccm_get_wm_normal_hints_unchecked(w.d.xcbConn, w.win),
+		w.win,
 		&hints,
-		nil,
 	)
 
-	C.xcb_icccm_size_hints_set_min_size(
+	w.d.l.xcb_icccm_size_hints_set_min_size(
 		&hints,
 		C.int32_t(mathx.Min(physicalSize.Width, math.MaxInt16)),
 		C.int32_t(mathx.Min(physicalSize.Height, math.MaxInt16)),
 	)
 
-	C.xcb_icccm_set_wm_normal_hints(w.d.xcbConn, w.win, &hints)
+	w.d.l.xcb_icccm_set_wm_normal_hints(w.d.xcbConn, w.win, &hints)
 }
 
 func (w *Window) SetMaxInnerSize(size dpi.Size[uint32]) {
 	physicalSize := size.ToPhysical(1)
 
 	var hints C.xcb_size_hints_t
-
-	C.xcb_icccm_get_wm_size_hints_reply(
+	w.d.l.xcb_icccm_get_wm_normal_hints_reply(
 		w.d.xcbConn,
-		C.xcb_icccm_get_wm_normal_hints_unchecked(w.d.xcbConn, w.win),
+		w.win,
 		&hints,
-		nil,
 	)
 
-	C.xcb_icccm_size_hints_set_max_size(
+	w.d.l.xcb_icccm_size_hints_set_max_size(
 		&hints,
 		C.int32_t(mathx.Min(physicalSize.Width, math.MaxInt16)),
 		C.int32_t(mathx.Min(physicalSize.Height, math.MaxInt16)),
 	)
 
-	C.xcb_icccm_set_wm_normal_hints(w.d.xcbConn, w.win, &hints)
+	w.d.l.xcb_icccm_set_wm_normal_hints(w.d.xcbConn, w.win, &hints)
 }
 
-// func (w *Window) Minimized() bool {
-// 	r := C.xcb_get_property_reply(
-// 		w.d.xcbConn,
-// 		C.xcb_get_property(
-// 			w.d.xcbConn,
-// 			0,
-// 			w.win,
-// 			w.d.wmState,
-// 			C.XCB_ATOM_ANY,
-// 			0,
-// 			1,
-// 		),
-// 		nil,
-// 	)
-// 	defer C.free(unsafe.Pointer(r))
-
-// 	dataSlice := unsafe.Slice(
-// 		(*uint32)(C.xcb_get_property_value(r)),
-// 		uintptr(C.xcb_get_property_value_length(r))/unsafe.Sizeof(uint32(0)),
-// 	)
-// 	return dataSlice[0] == C.XCB_ICCCM_WM_STATE_ICONIC
-// }
-
 func (w *Window) Maximized() bool {
-	r := C.xcb_get_property_reply(
+	r := w.d.l.xcb_get_property_reply(
 		w.d.xcbConn,
-		C.xcb_get_property(
-			w.d.xcbConn,
-			0,
-			w.win,
-			w.d.netWmState,
-			C.XCB_ATOM_ATOM,
-			0,
-			1024,
-		),
-		nil,
+		0,
+		w.win,
+		w.d.netWmState,
+		C.XCB_ATOM_ATOM,
+		0,
+		1024,
 	)
 	defer C.free(unsafe.Pointer(r))
 
 	dataSlice := unsafe.Slice(
-		(*C.xcb_atom_t)(C.xcb_get_property_value(r)),
-		uintptr(C.xcb_get_property_value_length(r))/unsafe.Sizeof(C.xcb_atom_t(0)),
+		(*C.xcb_atom_t)(w.d.l.xcb_get_property_value(r)),
+		uintptr(w.d.l.xcb_get_property_value_length(r))/unsafe.Sizeof(C.xcb_atom_t(0)),
 	)
 
 	var hasMaximizedHorz, hasMaximizedVert bool
@@ -332,6 +293,9 @@ func (w *Window) Maximized() bool {
 		}
 		if !hasMaximizedVert && atom == w.d.netWmStateMaximizedVert {
 			hasMaximizedVert = true
+		}
+		if hasMaximizedHorz && hasMaximizedVert {
+			return true
 		}
 	}
 
@@ -350,7 +314,7 @@ func (w *Window) SetMinimized() {
 	data := (*[5]uint32)(unsafe.Pointer(&event.data))
 	data[0] = C.XCB_ICCCM_WM_STATE_ICONIC
 
-	C.xcb_send_event(
+	w.d.l.xcb_send_event(
 		w.d.xcbConn,
 		0,
 		w.d.screens[0].xcbScreen.root,
@@ -359,16 +323,15 @@ func (w *Window) SetMinimized() {
 	)
 
 	var hints C.xcb_icccm_wm_hints_t
-	if C.xcb_icccm_get_wm_hints_reply(
+	if w.d.l.xcb_icccm_get_wm_hints_reply(
 		w.d.xcbConn,
-		C.xcb_icccm_get_wm_hints(w.d.xcbConn, w.win),
+		w.win,
 		&hints,
-		nil,
 	) != 0 {
-		C.xcb_icccm_wm_hints_set_iconic(&hints)
-		C.xcb_icccm_set_wm_hints(w.d.xcbConn, w.win, &hints)
+		w.d.l.xcb_icccm_wm_hints_set_iconic(&hints)
+		w.d.l.xcb_icccm_set_wm_hints(w.d.xcbConn, w.win, &hints)
 	}
-	C.xcb_flush(w.d.xcbConn)
+	w.d.l.xcb_flush(w.d.xcbConn)
 }
 
 func (w *Window) SetMaximized(maximized bool) {
@@ -389,14 +352,14 @@ func (w *Window) SetMaximized(maximized bool) {
 	data[1] = uint32(w.d.netWmStateMaximizedHorz)
 	data[2] = uint32(w.d.netWmStateMaximizedVert)
 
-	C.xcb_send_event(
+	w.d.l.xcb_send_event(
 		w.d.xcbConn,
 		0,
 		w.d.screens[0].xcbScreen.root,
 		C.XCB_EVENT_MASK_STRUCTURE_NOTIFY|C.XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT,
 		(*C.char)(unsafe.Pointer(&event)),
 	)
-	C.xcb_flush(w.d.xcbConn)
+	w.d.l.xcb_flush(w.d.xcbConn)
 }
 
 func (w *Window) SetCursorIcon(icon cursors.Icon) {
@@ -412,13 +375,13 @@ func (w *Window) SetCursorIcon(icon cursors.Icon) {
 	w.mu.Unlock()
 
 	cursor := w.d.loadCursorIcon(icon)
-	C.xcb_change_window_attributes(
+	w.d.l.xcb_change_window_attributes(
 		w.d.xcbConn,
 		w.win,
 		C.XCB_CW_CURSOR,
 		unsafe.Pointer(&cursor),
 	)
-	C.xcb_flush(w.d.xcbConn)
+	w.d.l.xcb_flush(w.d.xcbConn)
 }
 
 func (w *Window) SetCursorVisible(visible bool) {
@@ -430,13 +393,13 @@ func (w *Window) SetCursorVisible(visible bool) {
 			w.mu.Unlock()
 
 			cursor := w.d.loadCursorIcon(currentCursor)
-			C.xcb_change_window_attributes(
+			w.d.l.xcb_change_window_attributes(
 				w.d.xcbConn,
 				w.win,
 				C.XCB_CW_CURSOR,
 				unsafe.Pointer(&cursor),
 			)
-			C.xcb_flush(w.d.xcbConn)
+			w.d.l.xcb_flush(w.d.xcbConn)
 		} else {
 			w.mu.Unlock()
 		}
@@ -448,13 +411,13 @@ func (w *Window) SetCursorVisible(visible bool) {
 			w.mu.Unlock()
 
 			cursor := w.d.loadCursorIcon(0)
-			C.xcb_change_window_attributes(
+			w.d.l.xcb_change_window_attributes(
 				w.d.xcbConn,
 				w.win,
 				C.XCB_CW_CURSOR,
 				unsafe.Pointer(&cursor),
 			)
-			C.xcb_flush(w.d.xcbConn)
+			w.d.l.xcb_flush(w.d.xcbConn)
 		} else {
 			w.mu.Unlock()
 		}
@@ -478,34 +441,30 @@ func (w *Window) SetFullscreen(fullscreen bool) {
 	}
 	data[1] = uint32(w.d.netWmStateFullscreen)
 
-	C.xcb_send_event(
+	w.d.l.xcb_send_event(
 		w.d.xcbConn,
 		0,
 		w.d.screens[0].xcbScreen.root,
 		C.XCB_EVENT_MASK_STRUCTURE_NOTIFY|C.XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT,
 		(*C.char)(unsafe.Pointer(&event)),
 	)
-	C.xcb_flush(w.d.xcbConn)
+	w.d.l.xcb_flush(w.d.xcbConn)
 }
 func (w *Window) Fullscreen() bool {
-	r := C.xcb_get_property_reply(
+	r := w.d.l.xcb_get_property_reply(
 		w.d.xcbConn,
-		C.xcb_get_property(
-			w.d.xcbConn,
-			0,
-			w.win,
-			w.d.netWmState,
-			C.XCB_ATOM_ATOM,
-			0,
-			1024,
-		),
-		nil,
+		0,
+		w.win,
+		w.d.netWmState,
+		C.XCB_ATOM_ATOM,
+		0,
+		1024,
 	)
 	defer C.free(unsafe.Pointer(r))
 
 	dataSlice := unsafe.Slice(
-		(*C.xcb_atom_t)(C.xcb_get_property_value(r)),
-		uintptr(C.xcb_get_property_value_length(r))/unsafe.Sizeof(C.xcb_atom_t(0)),
+		(*C.xcb_atom_t)(w.d.l.xcb_get_property_value(r)),
+		uintptr(w.d.l.xcb_get_property_value_length(r))/unsafe.Sizeof(C.xcb_atom_t(0)),
 	)
 
 	for _, atom := range dataSlice {
@@ -524,16 +483,12 @@ func (w *Window) DragWindow() {
 	mousePosY := w.d.lastMousePositionY
 	w.d.mu.Unlock()
 
-	r := C.xcb_translate_coordinates_reply(
+	r := w.d.l.xcb_translate_coordinates_reply(
 		w.d.xcbConn,
-		C.xcb_translate_coordinates(
-			w.d.xcbConn,
-			w.win,
-			w.d.screens[0].xcbScreen.root,
-			C.int16_t(fixed1616ToFloat64(mousePosX)),
-			C.int16_t(fixed1616ToFloat64(mousePosY)),
-		),
-		nil,
+		w.win,
+		w.d.screens[0].xcbScreen.root,
+		C.int16_t(fixed1616ToFloat64(mousePosX)),
+		C.int16_t(fixed1616ToFloat64(mousePosY)),
 	)
 
 	var posX, posY C.int16_t
@@ -558,8 +513,8 @@ func (w *Window) DragWindow() {
 	data[2] = _NET_WM_MOVERESIZE_MOVE
 	data[3] = C.XCB_BUTTON_INDEX_1
 
-	C.xcb_ungrab_pointer(w.d.xcbConn, C.XCB_CURRENT_TIME)
-	C.xcb_send_event(
+	w.d.l.xcb_ungrab_pointer(w.d.xcbConn, C.XCB_CURRENT_TIME)
+	w.d.l.xcb_send_event(
 		w.d.xcbConn,
 		0,
 		w.d.screens[0].xcbScreen.root,
@@ -568,7 +523,7 @@ func (w *Window) DragWindow() {
 	)
 }
 
-func setDecorations(conn *C.struct_xcb_connection_t, win C.xcb_window_t, motifWmHints C.xcb_atom_t, decorate bool) {
+func (w *Window) setDecorations(motifWmHints C.xcb_atom_t, decorate bool) {
 	var hints struct {
 		flags       uint32
 		functions   uint32
@@ -584,10 +539,10 @@ func setDecorations(conn *C.struct_xcb_connection_t, win C.xcb_window_t, motifWm
 		hints.decorations = 0
 	}
 
-	C.xcb_change_property(
-		conn,
+	w.d.l.xcb_change_property(
+		w.d.xcbConn,
 		C.XCB_PROP_MODE_REPLACE,
-		win,
+		w.win,
 		motifWmHints,
 		motifWmHints,
 		32,
@@ -597,7 +552,7 @@ func setDecorations(conn *C.struct_xcb_connection_t, win C.xcb_window_t, motifWm
 }
 
 func (w *Window) SetDecorations(decorate bool) {
-	setDecorations(w.d.xcbConn, w.win, w.d.motifWmHints, decorate)
+	w.setDecorations(w.d.motifWmHints, decorate)
 }
 
 func (w *Window) Decorated() bool {
@@ -609,24 +564,20 @@ func (w *Window) Decorated() bool {
 		status      uint32
 	}
 
-	r := C.xcb_get_property_reply(
+	r := w.d.l.xcb_get_property_reply(
 		w.d.xcbConn,
-		C.xcb_get_property(
-			w.d.xcbConn,
-			0,
-			w.win,
-			w.d.motifWmHints,
-			w.d.motifWmHints,
-			0,
-			C.uint32_t(unsafe.Sizeof(wmHints{})),
-		),
-		nil,
+		0,
+		w.win,
+		w.d.motifWmHints,
+		w.d.motifWmHints,
+		0,
+		C.uint32_t(unsafe.Sizeof(wmHints{})),
 	)
 	defer C.free(unsafe.Pointer(r))
 
 	var hints wmHints
-	if C.xcb_get_property_value_length(r) == C.int(unsafe.Sizeof(wmHints{})) {
-		if v := (*wmHints)(C.xcb_get_property_value(r)); v != nil {
+	if w.d.l.xcb_get_property_value_length(r) == C.int(unsafe.Sizeof(wmHints{})) {
+		if v := (*wmHints)(w.d.l.xcb_get_property_value(r)); v != nil {
 			hints = *v
 		}
 	}

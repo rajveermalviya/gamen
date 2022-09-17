@@ -28,13 +28,13 @@ type scrollingDevice struct {
 }
 
 func (d *Display) xiSetupScrollingDevices(id C.xcb_input_device_id_t) error {
-	reply := C.xcb_input_xi_query_device_reply(d.xcbConn, C.xcb_input_xi_query_device(d.xcbConn, id), nil)
+	reply := d.l.xcb_input_xi_query_device_reply(d.xcbConn, id)
 	if reply == nil {
 		return errors.New("failed to setup xinput scrolling devices")
 	}
 	defer C.free(unsafe.Pointer(reply))
 
-	for it := C.xcb_input_xi_query_device_infos_iterator(reply); it.rem > 0; C.xcb_input_xi_device_info_next(&it) {
+	for it := d.l.xcb_input_xi_query_device_infos_iterator(reply); it.rem > 0; d.l.xcb_input_xi_device_info_next(&it) {
 		deviceInfo := it.data
 
 		if deviceInfo._type != C.XCB_INPUT_DEVICE_TYPE_SLAVE_POINTER {
@@ -43,7 +43,7 @@ func (d *Display) xiSetupScrollingDevices(id C.xcb_input_device_id_t) error {
 
 		var dev scrollingDevice
 
-		for it := C.xcb_input_xi_device_info_classes_iterator(deviceInfo); it.rem != 0; C.xcb_input_device_class_next(&it) {
+		for it := d.l.xcb_input_xi_device_info_classes_iterator(deviceInfo); it.rem != 0; d.l.xcb_input_device_class_next(&it) {
 			classInfo := it.data
 			switch classInfo._type {
 			case C.XCB_INPUT_DEVICE_CLASS_TYPE_SCROLL:
@@ -78,13 +78,13 @@ func (d *Display) xiSetupScrollingDevices(id C.xcb_input_device_id_t) error {
 }
 
 func (d *Display) resetScrollPosition(id C.xcb_input_device_id_t) {
-	reply := C.xcb_input_xi_query_device_reply(d.xcbConn, C.xcb_input_xi_query_device(d.xcbConn, id), nil)
+	reply := d.l.xcb_input_xi_query_device_reply(d.xcbConn, id)
 	if reply == nil {
 		return
 	}
 	defer C.free(unsafe.Pointer(reply))
 
-	for it := C.xcb_input_xi_query_device_infos_iterator(reply); it.rem > 0; C.xcb_input_xi_device_info_next(&it) {
+	for it := d.l.xcb_input_xi_query_device_infos_iterator(reply); it.rem > 0; d.l.xcb_input_xi_device_info_next(&it) {
 		deviceInfo := it.data
 
 		if deviceInfo._type != C.XCB_INPUT_DEVICE_TYPE_SLAVE_POINTER {
@@ -96,7 +96,7 @@ func (d *Display) resetScrollPosition(id C.xcb_input_device_id_t) {
 			continue
 		}
 
-		for it := C.xcb_input_xi_device_info_classes_iterator(deviceInfo); it.rem != 0; C.xcb_input_device_class_next(&it) {
+		for it := d.l.xcb_input_xi_device_info_classes_iterator(deviceInfo); it.rem != 0; d.l.xcb_input_device_class_next(&it) {
 			classInfo := it.data
 			if classInfo._type != C.XCB_INPUT_DEVICE_CLASS_TYPE_VALUATOR {
 				continue
