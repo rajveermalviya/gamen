@@ -23,10 +23,10 @@ func NewDisplay() (Display, error) {
 		return xcb.NewDisplay()
 
 	case "":
-		// d, err := wayland.NewDisplay()
-		// if err == nil {
-		// 	return d, nil
-		// }
+		d, err := wayland.NewDisplay()
+		if err == nil {
+			return d, nil
+		}
 
 		return xcb.NewDisplay()
 
