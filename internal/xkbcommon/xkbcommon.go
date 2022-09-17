@@ -11,8 +11,6 @@ import (
 
 /*
 
-#cgo linux pkg-config: x11-xcb xcb-xkb xkbcommon xkbcommon-x11
-
 #include <stdlib.h>
 
 #include <X11/Xlib-xcb.h>
@@ -24,9 +22,6 @@ import (
 
 */
 import "C"
-
-// https://github.com/xkbcommon/libxkbcommon/blob/master/tools/interactive-x11.c
-// https://github.com/xkbcommon/libxkbcommon/blob/master/tools/interactive-wayland.c
 
 var locale = func() string {
 	locale := os.Getenv("LC_ALL")
@@ -43,6 +38,7 @@ var locale = func() string {
 }()
 
 type Xkb struct {
+	l       *xkbcommon_library
 	context *C.struct_xkb_context
 	keymap  *C.struct_xkb_keymap
 	state   *C.struct_xkb_state
@@ -52,22 +48,27 @@ type Xkb struct {
 }
 
 func New() (xkb *Xkb, err error) {
-	context := C.xkb_context_new(C.XKB_CONTEXT_NO_FLAGS)
-	if context == nil {
-		return nil, errors.New("failed to create xkb context")
+	xkb = &Xkb{}
+
+	xkb.l, err = open_xkbcommon_library()
+	if err != nil {
+		return nil, err
 	}
 
-	xkb = &Xkb{context: context}
+	xkb.context = xkb.l.xkb_context_new(C.XKB_CONTEXT_NO_FLAGS)
+	if xkb.context == nil {
+		return nil, errors.New("failed to create xkb context")
+	}
 
 	localStr := C.CString(locale)
 	defer C.free(unsafe.Pointer(localStr))
 
-	xkb.composeTable = C.xkb_compose_table_new_from_locale(context, localStr, C.XKB_COMPOSE_COMPILE_NO_FLAGS)
+	xkb.composeTable = xkb.l.xkb_compose_table_new_from_locale(xkb.context, localStr, C.XKB_COMPOSE_COMPILE_NO_FLAGS)
 	if xkb.composeTable == nil {
 		return
 	}
 
-	xkb.composeState = C.xkb_compose_state_new(xkb.composeTable, C.XKB_COMPOSE_STATE_NO_FLAGS)
+	xkb.composeState = xkb.l.xkb_compose_state_new(xkb.composeTable, C.XKB_COMPOSE_STATE_NO_FLAGS)
 	if xkb.composeState == nil {
 		return
 	}
@@ -78,9 +79,15 @@ func New() (xkb *Xkb, err error) {
 type XcbConnection = C.xcb_connection_t
 
 func NewFromXcb(conn *XcbConnection) (xkb *Xkb, deviceId int32, firstEvent uint8, err error) {
-	var firstXkbEvent C.uint8_t
+	xkb = &Xkb{}
 
-	ret := C.xkb_x11_setup_xkb_extension(conn,
+	xkb.l, err = open_xkbcommon_library()
+	if err != nil {
+		return nil, 0, 0, err
+	}
+
+	var firstXkbEvent C.uint8_t
+	ret := xkb.l.xkb_x11_setup_xkb_extension(conn,
 		C.XKB_X11_MIN_MAJOR_XKB_VERSION,
 		C.XKB_X11_MIN_MINOR_XKB_VERSION,
 		C.XKB_X11_SETUP_XKB_EXTENSION_NO_FLAGS,
@@ -90,39 +97,37 @@ func NewFromXcb(conn *XcbConnection) (xkb *Xkb, deviceId int32, firstEvent uint8
 	}
 	firstEvent = uint8(firstXkbEvent)
 
-	deviceId = int32(C.xkb_x11_get_core_keyboard_device_id((*C.xcb_connection_t)(conn)))
+	deviceId = int32(xkb.l.xkb_x11_get_core_keyboard_device_id((*C.xcb_connection_t)(conn)))
 	if deviceId == -1 {
 		return nil, 0, 0, errors.New("unable to find core keyboard device")
 	}
 
-	context := C.xkb_context_new(C.XKB_CONTEXT_NO_FLAGS)
-	if context == nil {
+	xkb.context = xkb.l.xkb_context_new(C.XKB_CONTEXT_NO_FLAGS)
+	if xkb.context == nil {
 		return nil, 0, 0, errors.New("failed to create xkb context")
 	}
 
-	xkb = &Xkb{context: context}
-
 	err = xkb.UpdateKeymap(conn, deviceId)
 	if err != nil {
-		C.xkb_context_unref(context)
+		xkb.l.xkb_context_unref(xkb.context)
 		return nil, 0, 0, fmt.Errorf("failed to create keymap: %w", err)
 	}
 
-	err = selectXkbEvents((*C.xcb_connection_t)(conn), deviceId)
+	err = selectXkbEvents(xkb.l, (*C.xcb_connection_t)(conn), deviceId)
 	if err != nil {
-		C.xkb_context_unref(context)
+		xkb.l.xkb_context_unref(xkb.context)
 		return nil, 0, 0, fmt.Errorf("failed to select xcb-xkb events: %w", err)
 	}
 
 	localStr := C.CString(locale)
 	defer C.free(unsafe.Pointer(localStr))
 
-	xkb.composeTable = C.xkb_compose_table_new_from_locale(context, localStr, C.XKB_COMPOSE_COMPILE_NO_FLAGS)
+	xkb.composeTable = xkb.l.xkb_compose_table_new_from_locale(xkb.context, localStr, C.XKB_COMPOSE_COMPILE_NO_FLAGS)
 	if xkb.composeTable == nil {
 		return
 	}
 
-	xkb.composeState = C.xkb_compose_state_new(xkb.composeTable, C.XKB_COMPOSE_STATE_NO_FLAGS)
+	xkb.composeState = xkb.l.xkb_compose_state_new(xkb.composeTable, C.XKB_COMPOSE_STATE_NO_FLAGS)
 	if xkb.composeState == nil {
 		return
 	}
@@ -130,7 +135,7 @@ func NewFromXcb(conn *XcbConnection) (xkb *Xkb, deviceId int32, firstEvent uint8
 	return
 }
 
-func selectXkbEvents(conn *C.xcb_connection_t, deviceID int32) error {
+func selectXkbEvents(l *xkbcommon_library, conn *C.xcb_connection_t, deviceID int32) error {
 	requiredEvents := C.XCB_XKB_EVENT_TYPE_NEW_KEYBOARD_NOTIFY |
 		C.XCB_XKB_EVENT_TYPE_MAP_NOTIFY |
 		C.XCB_XKB_EVENT_TYPE_STATE_NOTIFY
@@ -159,7 +164,7 @@ func selectXkbEvents(conn *C.xcb_connection_t, deviceID int32) error {
 		stateDetails:       C.uint16_t(requiredStateDetails),
 	}
 
-	cookie := C.xcb_xkb_select_events_aux_checked(
+	cookie := l.xcb_xkb_select_events_aux_checked(
 		conn,
 		C.xcb_xkb_device_spec_t(deviceID),
 		C.uint16_t(requiredEvents),
@@ -170,7 +175,7 @@ func selectXkbEvents(conn *C.xcb_connection_t, deviceID int32) error {
 		details,
 	)
 
-	err := C.xcb_request_check(conn, cookie)
+	err := l.xcb_request_check(conn, cookie)
 	if err != nil {
 		C.free(unsafe.Pointer(err))
 		return errors.New("unable to bind events")
@@ -179,7 +184,7 @@ func selectXkbEvents(conn *C.xcb_connection_t, deviceID int32) error {
 }
 
 func (xkb *Xkb) KeymapFromBuffer(buf []byte) error {
-	keymap := C.xkb_keymap_new_from_buffer(
+	keymap := xkb.l.xkb_keymap_new_from_buffer(
 		xkb.context,
 		(*C.char)(unsafe.Pointer(&buf[0])),
 		C.size_t(len(buf)-1),
@@ -190,9 +195,9 @@ func (xkb *Xkb) KeymapFromBuffer(buf []byte) error {
 		return errors.New("unable to create keymap from buffer")
 	}
 
-	state := C.xkb_state_new(keymap)
+	state := xkb.l.xkb_state_new(keymap)
 	if state == nil {
-		C.xkb_keymap_unref(keymap)
+		xkb.l.xkb_keymap_unref(keymap)
 		return errors.New("unable to create new state")
 	}
 
@@ -202,7 +207,7 @@ func (xkb *Xkb) KeymapFromBuffer(buf []byte) error {
 }
 
 func (xkb *Xkb) UpdateKeymap(conn *XcbConnection, deviceID int32) error {
-	keymap := C.xkb_x11_keymap_new_from_device(
+	keymap := xkb.l.xkb_x11_keymap_new_from_device(
 		xkb.context,
 		conn,
 		C.int32_t(deviceID),
@@ -211,9 +216,9 @@ func (xkb *Xkb) UpdateKeymap(conn *XcbConnection, deviceID int32) error {
 		return errors.New("unable to create keymap from device")
 	}
 
-	state := C.xkb_x11_state_new_from_device(keymap, conn, C.int32_t(deviceID))
+	state := xkb.l.xkb_x11_state_new_from_device(keymap, conn, C.int32_t(deviceID))
 	if state == nil {
-		C.xkb_keymap_unref(keymap)
+		xkb.l.xkb_keymap_unref(keymap)
 		return errors.New("unable to create state from device")
 	}
 
@@ -231,43 +236,43 @@ func (xkb *Xkb) KeyRepeats(key KeyCode) bool {
 	if xkb.keymap == nil {
 		return false
 	}
-	return C.xkb_keymap_key_repeats(xkb.keymap, key) != 0
+	return xkb.l.xkb_keymap_key_repeats(xkb.keymap, key) != 0
 }
 
 func (xkb *Xkb) GetOneSym(key KeyCode) C.xkb_keysym_t {
-	return C.xkb_state_key_get_one_sym(xkb.state, key)
+	return xkb.l.xkb_state_key_get_one_sym(xkb.state, key)
 }
 
 func (xkb *Xkb) GetUtf8(key KeyCode, sym KeySym) string {
 	if xkb.composeState == nil {
-		size := C.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), nil, 0) + 1
+		size := xkb.l.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), nil, 0) + 1
 		if size > 1 {
 			buf := (*C.char)(C.malloc(C.size_t(size)))
 			defer C.free(unsafe.Pointer(buf))
-			C.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), buf, C.size_t(size))
+			xkb.l.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), buf, C.size_t(size))
 			return C.GoString(buf)
 		}
 		return ""
 	}
 
-	feedResult := C.xkb_compose_state_feed(xkb.composeState, C.xkb_keysym_t(sym))
+	feedResult := xkb.l.xkb_compose_state_feed(xkb.composeState, C.xkb_keysym_t(sym))
 	if feedResult == C.XKB_COMPOSE_FEED_ACCEPTED {
-		status := C.xkb_compose_state_get_status(xkb.composeState)
+		status := xkb.l.xkb_compose_state_get_status(xkb.composeState)
 		switch status {
 		case C.XKB_COMPOSE_COMPOSED:
-			size := C.xkb_compose_state_get_utf8(xkb.composeState, nil, 0) + 1
+			size := xkb.l.xkb_compose_state_get_utf8(xkb.composeState, nil, 0) + 1
 			if size > 1 {
 				buf := (*C.char)(C.malloc(C.size_t(size)))
 				defer C.free(unsafe.Pointer(buf))
-				C.xkb_compose_state_get_utf8(xkb.composeState, buf, C.size_t(size))
+				xkb.l.xkb_compose_state_get_utf8(xkb.composeState, buf, C.size_t(size))
 				return C.GoString(buf)
 			}
 		case C.XKB_COMPOSE_NOTHING:
-			size := C.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), nil, 0) + 1
+			size := xkb.l.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), nil, 0) + 1
 			if size > 1 {
 				buf := (*C.char)(C.malloc(C.size_t(size)))
 				defer C.free(unsafe.Pointer(buf))
-				C.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), buf, C.size_t(size))
+				xkb.l.xkb_state_key_get_utf8(xkb.state, C.xkb_keycode_t(key), buf, C.size_t(size))
 				return C.GoString(buf)
 			}
 		}
@@ -289,7 +294,7 @@ func (xkb *Xkb) UpdateMask(
 	latched_layout LayoutIndex,
 	locked_layout LayoutIndex,
 ) bool {
-	return C.xkb_state_update_mask(xkb.state,
+	return xkb.l.xkb_state_update_mask(xkb.state,
 		depressed_mods,
 		latched_mods,
 		locked_mods,
@@ -307,40 +312,44 @@ var (
 )
 
 func (xkb *Xkb) ModIsShift() bool {
-	return C.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_SHIFT, C.XKB_STATE_MODS_EFFECTIVE) == 1
+	return xkb.l.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_SHIFT, C.XKB_STATE_MODS_EFFECTIVE) == 1
 }
 
 func (xkb *Xkb) ModIsCtrl() bool {
-	return C.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_CTRL, C.XKB_STATE_MODS_EFFECTIVE) == 1
+	return xkb.l.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_CTRL, C.XKB_STATE_MODS_EFFECTIVE) == 1
 }
 
 func (xkb *Xkb) ModIsAlt() bool {
-	return C.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_ALT, C.XKB_STATE_MODS_EFFECTIVE) == 1
+	return xkb.l.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_ALT, C.XKB_STATE_MODS_EFFECTIVE) == 1
 }
 
 func (xkb *Xkb) ModIsLogo() bool {
-	return C.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_LOGO, C.XKB_STATE_MODS_EFFECTIVE) == 1
+	return xkb.l.xkb_state_mod_name_is_active(xkb.state, XKB_MOD_NAME_LOGO, C.XKB_STATE_MODS_EFFECTIVE) == 1
 }
 
 func (xkb *Xkb) Destroy() {
 	if xkb.state != nil {
-		C.xkb_state_unref(xkb.state)
+		xkb.l.xkb_state_unref(xkb.state)
 		xkb.state = nil
 	}
 	if xkb.keymap != nil {
-		C.xkb_keymap_unref(xkb.keymap)
+		xkb.l.xkb_keymap_unref(xkb.keymap)
 		xkb.keymap = nil
 	}
 	if xkb.composeState != nil {
-		C.xkb_compose_state_unref(xkb.composeState)
+		xkb.l.xkb_compose_state_unref(xkb.composeState)
 		xkb.composeState = nil
 	}
 	if xkb.composeTable != nil {
-		C.xkb_compose_table_unref(xkb.composeTable)
+		xkb.l.xkb_compose_table_unref(xkb.composeTable)
 		xkb.composeTable = nil
 	}
 	if xkb.context != nil {
-		C.xkb_context_unref(xkb.context)
+		xkb.l.xkb_context_unref(xkb.context)
 		xkb.context = nil
+	}
+	if xkb.l != nil {
+		xkb.l.close()
+		xkb.l = nil
 	}
 }

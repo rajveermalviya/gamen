@@ -15,11 +15,6 @@ jobs:
         include:
           - name: Test build on linux for linux
             os: ubuntu-22.04
-            setup_env: |
-              set -x
-              sudo apt update
-              sudo apt install libwayland-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb-randr0-dev libxcb-xinput-dev libxcb-icccm4-dev libxcursor-dev libxcb-image0-dev
-
             goos: linux
             build_cmd: |
               set -x;

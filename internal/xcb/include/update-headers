@@ -1,0 +1,28 @@
+#!/bin/bash
+set -e
+
+pkgs=("libX11-devel" "xorg-x11-proto-devel" "libxkbcommon-x11-devel" "libxkbcommon-devel" "libxcb-devel" "libXcursor-devel" "xcb-util-image-devel" "xcb-util-wm-devel")
+
+for i in "${pkgs[@]}"
+do
+    rm -f $i.rpm
+done
+
+go run ../../common/cmd/download-rpms/download-rpms.go ${pkgs[*]}
+
+for i in "${pkgs[@]}"
+do
+    rpm2archive -n $i.rpm
+    rm -rf $i
+    mkdir $i
+    tar -xf $i.rpm.tar --directory $i
+    cp -r $i/usr/include/* .
+    rm -rf $i $i.rpm.tar
+done
+
+for i in "${pkgs[@]}"
+do
+    rm -f $i.rpm
+done
+
+go run ../../common/cmd/add-dummy-file/add-dummy-file.go github.com/rajveermalviya/gamen/internal/xcb/include/

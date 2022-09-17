@@ -4,8 +4,6 @@ package xcb
 
 /*
 
-#cgo linux pkg-config: x11-xcb xcb-randr xcb-xinput xcb-xkb xcb-icccm xkbcommon xkbcommon-x11 xcursor xcb-image
-
 #include <stdlib.h>
 
 #include <X11/Xlib-xcb.h>
@@ -34,6 +32,7 @@ import (
 )
 
 type Display struct {
+	l         *xcb_library
 	destroyed bool
 	// we allow destroy function to be called multiple
 	// times, but in reality we run it once
@@ -82,15 +81,21 @@ type Display struct {
 }
 
 func NewDisplay() (*Display, error) {
-	C.XInitThreads()
-	xlibDisp := C.XOpenDisplay(nil)
+	l, err := open_xcb_library()
+	if err != nil {
+		return nil, err
+	}
+
+	l.XInitThreads()
+	xlibDisp := l.XOpenDisplay(nil)
 	if xlibDisp == nil {
 		return nil, errors.New("XOpenDisplay failed")
 	}
-	xcbConn := C.XGetXCBConnection(xlibDisp)
-	C.XSetEventQueueOwner(xlibDisp, C.XCBOwnsEventQueue)
+	xcbConn := l.XGetXCBConnection(xlibDisp)
+	l.XSetEventQueueOwner(xlibDisp, C.XCBOwnsEventQueue)
 
 	d := &Display{
+		l:                l,
 		xlibDisp:         xlibDisp,
 		xcbConn:          xcbConn,
 		windows:          map[C.xcb_window_t]*Window{},
@@ -98,20 +103,17 @@ func NewDisplay() (*Display, error) {
 		cursors:          map[cursors.Icon]C.xcb_cursor_t{},
 	}
 
-	setup := C.xcb_get_setup(xcbConn)
-	d.initializeOutputs(setup)
-
 	// xcb-randr
 	{
-		reply := C.xcb_get_extension_data(xcbConn, &C.xcb_randr_id)
+		reply := l.xcb_get_extension_data(xcbConn, (*C.xcb_extension_t)(l.xcb_randr_id))
 		if reply == nil || reply.present == 0 {
 			return nil, errors.New("xcb-randr not available")
 		}
 
-		query := C.xcb_randr_query_version_reply(
+		query := l.xcb_randr_query_version_reply(
 			xcbConn,
-			C.xcb_randr_query_version(xcbConn, C.XCB_RANDR_MAJOR_VERSION, C.XCB_RANDR_MINOR_VERSION),
-			nil,
+			C.XCB_RANDR_MAJOR_VERSION,
+			C.XCB_RANDR_MINOR_VERSION,
 		)
 		defer C.free(unsafe.Pointer(query))
 		if query == nil || (query.major_version < 1 || (query.major_version == 1 && query.minor_version < 2)) {
@@ -123,15 +125,15 @@ func NewDisplay() (*Display, error) {
 
 	// xcb-xinput
 	{
-		reply := C.xcb_get_extension_data(xcbConn, &C.xcb_input_id)
+		reply := l.xcb_get_extension_data(xcbConn, (*C.xcb_extension_t)(l.xcb_input_id))
 		if reply == nil || reply.present == 0 {
 			return nil, errors.New("xcb-xinput not available")
 		}
 
-		query := C.xcb_input_xi_query_version_reply(
+		query := l.xcb_input_xi_query_version_reply(
 			xcbConn,
-			C.xcb_input_xi_query_version(xcbConn, C.XCB_INPUT_MAJOR_VERSION, C.XCB_INPUT_MINOR_VERSION),
-			nil,
+			C.XCB_INPUT_MAJOR_VERSION,
+			C.XCB_INPUT_MINOR_VERSION,
 		)
 		defer C.free(unsafe.Pointer(query))
 		if query == nil || query.major_version < 2 {
@@ -141,15 +143,15 @@ func NewDisplay() (*Display, error) {
 
 	// xcb-xkb
 	{
-		reply := C.xcb_get_extension_data(xcbConn, &C.xcb_xkb_id)
+		reply := l.xcb_get_extension_data(xcbConn, (*C.xcb_extension_t)(l.xcb_xkb_id))
 		if reply == nil || reply.present == 0 {
 			return nil, errors.New("xcb-xkb not available")
 		}
 
-		query := C.xcb_xkb_use_extension_reply(
+		query := l.xcb_xkb_use_extension_reply(
 			xcbConn,
-			C.xcb_xkb_use_extension(xcbConn, 1, 0),
-			nil,
+			1,
+			0,
 		)
 		defer C.free(unsafe.Pointer(query))
 		if query == nil || query.supported == 0 {
@@ -159,24 +161,27 @@ func NewDisplay() (*Display, error) {
 
 	// atoms
 	{
-		d.wmProtocols = internAtom(d.xcbConn, true, "WM_PROTOCOLS")
-		d.wmDeleteWindow = internAtom(d.xcbConn, false, "WM_DELETE_WINDOW")
-		d.wmState = internAtom(d.xcbConn, false, "WM_STATE")
-		d.wmChangeState = internAtom(d.xcbConn, false, "WM_CHANGE_STATE")
+		d.wmProtocols = d.internAtom(true, "WM_PROTOCOLS")
+		d.wmDeleteWindow = d.internAtom(false, "WM_DELETE_WINDOW")
+		d.wmState = d.internAtom(false, "WM_STATE")
+		d.wmChangeState = d.internAtom(false, "WM_CHANGE_STATE")
 
-		d.netWmState = internAtom(d.xcbConn, false, "_NET_WM_STATE")
-		d.netWmStateMaximizedHorz = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_HORZ")
-		d.netWmStateMaximizedVert = internAtom(d.xcbConn, false, "_NET_WM_STATE_MAXIMIZED_VERT")
-		d.netWmStateFullscreen = internAtom(d.xcbConn, false, "_NET_WM_STATE_FULLSCREEN")
-		d.netWmMoveResize = internAtom(d.xcbConn, false, "_NET_WM_MOVERESIZE")
+		d.netWmState = d.internAtom(false, "_NET_WM_STATE")
+		d.netWmStateMaximizedHorz = d.internAtom(false, "_NET_WM_STATE_MAXIMIZED_HORZ")
+		d.netWmStateMaximizedVert = d.internAtom(false, "_NET_WM_STATE_MAXIMIZED_VERT")
+		d.netWmStateFullscreen = d.internAtom(false, "_NET_WM_STATE_FULLSCREEN")
+		d.netWmMoveResize = d.internAtom(false, "_NET_WM_MOVERESIZE")
 
-		d.motifWmHints = internAtom(d.xcbConn, false, "_MOTIF_WM_HINTS")
+		d.motifWmHints = d.internAtom(false, "_MOTIF_WM_HINTS")
 
-		d.relHorizWheel = internAtom(d.xcbConn, false, "Rel Horiz Wheel")
-		d.relVertWheel = internAtom(d.xcbConn, false, "Rel Vert Wheel")
-		d.relHorizScroll = internAtom(d.xcbConn, false, "Rel Horiz Scroll")
-		d.relVertScroll = internAtom(d.xcbConn, false, "Rel Vert Scroll")
+		d.relHorizWheel = d.internAtom(false, "Rel Horiz Wheel")
+		d.relVertWheel = d.internAtom(false, "Rel Vert Wheel")
+		d.relHorizScroll = d.internAtom(false, "Rel Horiz Scroll")
+		d.relVertScroll = d.internAtom(false, "Rel Vert Scroll")
 	}
+
+	setup := l.xcb_get_setup(xcbConn)
+	d.initializeOutputs(setup)
 
 	if err := d.xiSetupScrollingDevices(C.XCB_INPUT_DEVICE_ALL); err != nil {
 		return nil, err
@@ -195,7 +200,7 @@ func NewDisplay() (*Display, error) {
 		setXiMask(&eventMask.mask, C.XCB_INPUT_HIERARCHY)
 		setXiMask(&eventMask.mask, C.XCB_INPUT_DEVICE_CHANGED)
 
-		C.xcb_input_xi_select_events(xcbConn, 0, 1, (*C.xcb_input_event_mask_t)(unsafe.Pointer(&eventMask)))
+		d.l.xcb_input_xi_select_events(xcbConn, 0, 1, (*C.xcb_input_event_mask_t)(unsafe.Pointer(&eventMask)))
 	}
 
 	xkb, deviceID, firstXkbEvent, err := xkbcommon.NewFromXcb((*xkbcommon.XcbConnection)(xcbConn))
@@ -217,7 +222,7 @@ func (d *Display) Poll() bool {
 	events := make([]*C.xcb_generic_event_t, 0, 2048)
 
 	for {
-		ev := C.xcb_poll_for_event(d.xcbConn)
+		ev := d.l.xcb_poll_for_event(d.xcbConn)
 		if ev == nil {
 			break
 		}
@@ -237,7 +242,7 @@ func (d *Display) Wait() bool {
 	}
 
 	fds := []unix.PollFd{{
-		Fd:     int32(C.xcb_get_file_descriptor(d.xcbConn)),
+		Fd:     int32(d.l.xcb_get_file_descriptor(d.xcbConn)),
 		Events: unix.POLLIN,
 	}}
 	if !poll(fds, -1) {
@@ -253,7 +258,7 @@ func (d *Display) WaitTimeout(timeout time.Duration) bool {
 	}
 
 	fds := []unix.PollFd{{
-		Fd:     int32(C.xcb_get_file_descriptor(d.xcbConn)),
+		Fd:     int32(d.l.xcb_get_file_descriptor(d.xcbConn)),
 		Events: unix.POLLIN,
 	}}
 	if !poll(fds, timeout) {
@@ -322,7 +327,7 @@ func (d *Display) Destroy() {
 		}
 
 		for i, c := range d.cursors {
-			C.xcb_free_cursor(d.xcbConn, c)
+			d.l.xcb_free_cursor(d.xcbConn, c)
 			delete(d.cursors, i)
 		}
 
@@ -332,9 +337,14 @@ func (d *Display) Destroy() {
 		}
 
 		if d.xlibDisp != nil {
-			C.XCloseDisplay(d.xlibDisp)
+			d.l.XCloseDisplay(d.xlibDisp)
 			d.xlibDisp = nil
 			d.xcbConn = nil
+		}
+
+		if d.l != nil {
+			d.l.close()
+			d.l = nil
 		}
 	})
 }
@@ -694,12 +704,12 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 			return
 		}
 
-		maskLen := C.xcb_input_button_press_valuator_mask_length(ev)
-		mask := unsafe.Slice(C.xcb_input_button_press_valuator_mask(ev), maskLen)
+		maskLen := d.l.xcb_input_button_press_valuator_mask_length(ev)
+		mask := unsafe.Slice(d.l.xcb_input_button_press_valuator_mask(ev), maskLen)
 
 		axisValues := unsafe.Slice(
-			C.xcb_input_button_press_axisvalues(ev),
-			C.xcb_input_button_press_axisvalues_length(ev),
+			d.l.xcb_input_button_press_axisvalues(ev),
+			d.l.xcb_input_button_press_axisvalues_length(ev),
 		)
 
 		axisValuesIndex := 0

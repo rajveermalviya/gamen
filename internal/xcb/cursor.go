@@ -18,10 +18,12 @@ import (
 	"github.com/rajveermalviya/gamen/internal/common/xcursor"
 )
 
-func createEmptyCursor(xconn *C.xcb_connection_t, root C.xcb_window_t) C.xcb_cursor_t {
+func (d *Display) createEmptyCursor() C.xcb_cursor_t {
 	var buf [32]C.uint8_t
 
-	source := C.xcb_create_pixmap_from_bitmap_data(xconn,
+	root := d.screens[0].xcbScreen.root
+
+	source := d.l.xcb_create_pixmap_from_bitmap_data(d.xcbConn,
 		root,
 		(*C.uint8_t)(unsafe.Pointer(&buf)),
 		16, 16,
@@ -29,9 +31,9 @@ func createEmptyCursor(xconn *C.xcb_connection_t, root C.xcb_window_t) C.xcb_cur
 		0, 0,
 		nil,
 	)
-	defer C.xcb_free_pixmap(xconn, source)
+	defer d.l.xcb_free_pixmap(d.xcbConn, source)
 
-	mask := C.xcb_create_pixmap_from_bitmap_data(xconn,
+	mask := d.l.xcb_create_pixmap_from_bitmap_data(d.xcbConn,
 		root,
 		(*C.uint8_t)(unsafe.Pointer(&buf)),
 		16, 16,
@@ -39,10 +41,10 @@ func createEmptyCursor(xconn *C.xcb_connection_t, root C.xcb_window_t) C.xcb_cur
 		0, 0,
 		nil,
 	)
-	defer C.xcb_free_pixmap(xconn, mask)
+	defer d.l.xcb_free_pixmap(d.xcbConn, mask)
 
-	cursorId := C.xcb_generate_id(xconn)
-	C.xcb_create_cursor(xconn,
+	cursorId := d.l.xcb_generate_id(d.xcbConn)
+	d.l.xcb_create_cursor(d.xcbConn,
 		cursorId,
 		source, mask,
 		0, 0, 0,
@@ -52,11 +54,11 @@ func createEmptyCursor(xconn *C.xcb_connection_t, root C.xcb_window_t) C.xcb_cur
 	return cursorId
 }
 
-func loadCursor(dpy *C.Display, name string) C.xcb_cursor_t {
+func (d *Display) loadXCursor(name string) C.xcb_cursor_t {
 	nameStr := C.CString(name)
 	defer C.free(unsafe.Pointer(nameStr))
 
-	cursor := C.XcursorLibraryLoadCursor(dpy, nameStr)
+	cursor := d.l.XcursorLibraryLoadCursor(d.xlibDisp, nameStr)
 	return C.xcb_cursor_t(cursor)
 }
 
@@ -70,13 +72,13 @@ func (d *Display) loadCursorIcon(icon cursors.Icon) C.xcb_cursor_t {
 	}
 
 	if icon == 0 {
-		c = createEmptyCursor(d.xcbConn, d.screens[0].xcbScreen.root)
+		c = d.createEmptyCursor()
 		d.cursors[icon] = c
 		return c
 	}
 
 	for _, name := range xcursor.ToXcursorName(icon) {
-		c = loadCursor(d.xlibDisp, name)
+		c = d.loadXCursor(name)
 		if c != 0 {
 			break
 		}

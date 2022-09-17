@@ -61,21 +61,7 @@ windows (win32) backend **does not** use CGO, i.e **does not** require a C toolc
 
 ### linux
 
-resulting binaries shouldn't require any dependency to be installed by the users. but developers will need some `devel` packages.
-
-#### fedora
-
-```shell
-sudo dnf install wayland-devel libX11-devel libXcursor-devel libxkbcommon-x11-devel xcb-util-image-devel xcb-util-wm-devel
-```
-
-#### ubuntu
-
-```shell
-sudo apt install libwayland-dev libxkbcommon-x11-dev libx11-xcb-dev libxcb-randr0-dev libxcb-xinput-dev libxcb-icccm4-dev libxcursor-dev libxcb-image0-dev
-```
-
-<!-- TODO: other distros -->
+resulting binaries shouldn't require any dependency to be installed by the users. Even developers don't need to install any distro packages (it just works!), because required headers are vendored and all libraries are dynamically loaded.
 
 ### android
 
