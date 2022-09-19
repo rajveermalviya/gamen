@@ -85,7 +85,7 @@ web backend uses `syscall/js` package.
 [`tsukuru`](https://github.com/rajveermalviya/tsukuru) can be used to help with automatically building wasm and copying `wasm_exec.js` & `wasm_exec.html` from `$GOROOT` to a directory and spinning up a local file server for you.
 
 ```shell
-go install github.com/rajveermalviya/tsukuru@latest
+go install github.com/rajveermalviya/tsukuru/cmd/tsukuru@latest
 
 tsukuru run wasm ./examples/hello
 ```
