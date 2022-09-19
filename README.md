@@ -73,7 +73,7 @@ android backend uses [`game-activity`](https://developer.android.com/games/agdk/
 # make sure you have android sdk installed
 # connect your device and setup adb connection / run android emulator
 
-go install github.com/rajveermalviya/tsukuru@latest
+go install github.com/rajveermalviya/tsukuru/cmd/tsukuru@latest
 
 tsukuru run apk ./examples/hello
 ```
