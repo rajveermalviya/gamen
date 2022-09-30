@@ -4,13 +4,11 @@ package android
 
 import (
 	"runtime"
-	"sync"
-	"sync/atomic"
 	"time"
-	"unsafe"
 
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 )
 
 /*
@@ -27,14 +25,14 @@ extern void display_set_handler(struct android_app* app);
 */
 import "C"
 
-var androidApp unsafe.Pointer
+var androidApp atomicx.Pointer[C.struct_android_app]
 
 //go:linkname main_main main.main
 func main_main()
 
 //export android_main
 func android_main(app *C.struct_android_app) {
-	atomic.StorePointer(&androidApp, unsafe.Pointer(app))
+	androidApp.Store(app)
 
 	C.display_set_handler(app)
 
@@ -48,17 +46,17 @@ func NewDisplay() (*Display, error) {
 }
 
 func (d *Display) Destroy() {
-	app := (*C.struct_android_app)(atomic.LoadPointer(&androidApp))
-	if app != nil {
+	if app := androidApp.Load(); app != nil {
 		C.GameActivity_finish(app.activity)
 	}
 }
 func (d *Display) Wait() bool {
 	C.display_poll(-1)
 
-	app := (*C.struct_android_app)(atomic.LoadPointer(&androidApp))
-	if app != nil && app.destroyRequested != 0 {
-		return false
+	if app := androidApp.Load(); app != nil {
+		if app.destroyRequested != 0 {
+			return false
+		}
 	}
 
 	clearInputBuffers()
@@ -67,9 +65,10 @@ func (d *Display) Wait() bool {
 func (d *Display) Poll() bool {
 	C.display_poll(0)
 
-	app := (*C.struct_android_app)(atomic.LoadPointer(&androidApp))
-	if app != nil && app.destroyRequested != 0 {
-		return false
+	if app := androidApp.Load(); app != nil {
+		if app.destroyRequested != 0 {
+			return false
+		}
 	}
 
 	clearInputBuffers()
@@ -78,9 +77,10 @@ func (d *Display) Poll() bool {
 func (d *Display) WaitTimeout(t time.Duration) bool {
 	C.display_poll(C.int(t.Milliseconds()))
 
-	app := (*C.struct_android_app)(atomic.LoadPointer(&androidApp))
-	if app != nil && app.destroyRequested != 0 {
-		return false
+	if app := androidApp.Load(); app != nil {
+		if app.destroyRequested != 0 {
+			return false
+		}
 	}
 
 	clearInputBuffers()
@@ -88,40 +88,36 @@ func (d *Display) WaitTimeout(t time.Duration) bool {
 }
 
 var (
-	cbMut                           sync.Mutex
-	windowSurfaceCreatedCb          events.WindowSurfaceCreatedCallback
-	windowSurfaceDestroyedCb        events.WindowSurfaceDestroyedCallback
-	windowResizedCallback           events.WindowResizedCallback
-	windowFocusedCb                 events.WindowFocusedCallback
-	windowUnfocusedCb               events.WindowUnfocusedCallback
-	windowTouchInputCb              events.WindowTouchInputCallback
-	windowKeyboardInputCb           events.WindowKeyboardInputCallback
-	windowReceivedCharacterCallback events.WindowReceivedCharacterCallback
+	windowSurfaceCreatedCb          atomicx.Pointer[events.WindowSurfaceCreatedCallback]
+	windowSurfaceDestroyedCb        atomicx.Pointer[events.WindowSurfaceDestroyedCallback]
+	windowResizedCallback           atomicx.Pointer[events.WindowResizedCallback]
+	windowFocusedCb                 atomicx.Pointer[events.WindowFocusedCallback]
+	windowUnfocusedCb               atomicx.Pointer[events.WindowUnfocusedCallback]
+	windowTouchInputCb              atomicx.Pointer[events.WindowTouchInputCallback]
+	windowKeyboardInputCb           atomicx.Pointer[events.WindowKeyboardInputCallback]
+	windowReceivedCharacterCallback atomicx.Pointer[events.WindowReceivedCharacterCallback]
 )
 
 func runResizedCallback() {
-	cbMut.Lock()
-	resizedCb := windowResizedCallback
-	cbMut.Unlock()
+	if app := androidApp.Load(); app != nil {
+		window := app.window
+		config := app.config
 
-	app := (*C.struct_android_app)(atomic.LoadPointer(&androidApp))
-	var window *C.ANativeWindow
-	var config *C.AConfiguration
-	if app != nil {
-		window = app.window
-		config = app.config
-	}
+		if cb := windowResizedCallback.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				if window != nil {
+					newWidth := C.ANativeWindow_getWidth(window)
+					newHeight := C.ANativeWindow_getHeight(window)
+					scaleFactor := float64(1)
+					if config != nil {
+						density := C.AConfiguration_getDensity(config)
+						scaleFactor = float64(density) / float64(160)
+					}
 
-	if resizedCb != nil && window != nil {
-		newWidth := C.ANativeWindow_getWidth(window)
-		newHeight := C.ANativeWindow_getHeight(window)
-		scaleFactor := float64(1)
-		if config != nil {
-			density := C.AConfiguration_getDensity(config)
-			scaleFactor = float64(density) / float64(160)
+					cb(uint32(newWidth), uint32(newHeight), scaleFactor)
+				}
+			}
 		}
-
-		resizedCb(uint32(newWidth), uint32(newHeight), scaleFactor)
 	}
 }
 
@@ -129,21 +125,17 @@ func runResizedCallback() {
 func display_handle_command(app *C.struct_android_app, cmd C.int32_t) {
 	switch cmd {
 	case C.APP_CMD_INIT_WINDOW:
-		cbMut.Lock()
-		surfaceCreatedCb := windowSurfaceCreatedCb
-		cbMut.Unlock()
-
-		if surfaceCreatedCb != nil {
-			surfaceCreatedCb()
+		if cb := windowSurfaceCreatedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb()
+			}
 		}
 
 	case C.APP_CMD_TERM_WINDOW:
-		cbMut.Lock()
-		surfaceDestroyedCb := windowSurfaceDestroyedCb
-		cbMut.Unlock()
-
-		if surfaceDestroyedCb != nil {
-			surfaceDestroyedCb()
+		if cb := windowSurfaceDestroyedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb()
+			}
 		}
 
 	case C.APP_CMD_WINDOW_RESIZED,
@@ -156,21 +148,17 @@ func display_handle_command(app *C.struct_android_app, cmd C.int32_t) {
 		runtime.GC()
 
 	case C.APP_CMD_GAINED_FOCUS:
-		cbMut.Lock()
-		focusedCb := windowFocusedCb
-		cbMut.Unlock()
-
-		if focusedCb != nil {
-			focusedCb()
+		if cb := windowFocusedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb()
+			}
 		}
 
 	case C.APP_CMD_LOST_FOCUS:
-		cbMut.Lock()
-		unfocusedCb := windowUnfocusedCb
-		cbMut.Unlock()
-
-		if unfocusedCb != nil {
-			unfocusedCb()
+		if cb := windowUnfocusedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb()
+			}
 		}
 
 	case C.APP_CMD_WINDOW_REDRAW_NEEDED:
@@ -198,35 +186,30 @@ func display_handle_key_event(event *C.GameActivityKeyEvent) C.bool {
 		panic("unreachable")
 	}
 
-	cbMut.Lock()
-	keyboardInputCb := windowKeyboardInputCb
-	cbMut.Unlock()
-
-	if keyboardInputCb != nil {
-		keyboardInputCb(
-			state,
-			// TODO: current release of GameActivity doesn't expose scancode,
-			// but it's available in master, we'll have to wait for next release
-			events.ScanCode(0),
-			mapKeycode(event.keyCode),
-		)
+	if cb := windowKeyboardInputCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb(
+				state,
+				// TODO: current release of GameActivity doesn't expose scancode,
+				// but it's available in master, we'll have to wait for next release
+				events.ScanCode(0),
+				mapKeycode(event.keyCode),
+			)
+		}
 	}
 
-	cbMut.Lock()
-	receivedCharacterCallback := windowReceivedCharacterCallback
-	cbMut.Unlock()
-
-	if event.unicodeChar != 0 &&
-		state == events.ButtonStatePressed &&
-		receivedCharacterCallback != nil {
-		receivedCharacterCallback(rune(event.unicodeChar))
+	if event.unicodeChar != 0 && state == events.ButtonStatePressed {
+		if cb := windowReceivedCharacterCallback.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(rune(event.unicodeChar))
+			}
+		}
 	}
 
 	return true
 }
 
 var oldPosXs, oldPosYs [C.GAMEACTIVITY_MAX_NUM_POINTERS_IN_MOTION_EVENT]C.float
-var oldPosMut sync.Mutex
 
 //export display_handle_motion_event
 func display_handle_motion_event(event *C.GameActivityMotionEvent) C.bool {
@@ -266,19 +249,17 @@ func display_handle_motion_event(event *C.GameActivityMotionEvent) C.bool {
 				oldPosXs[ptrIdx] = newX
 				oldPosYs[ptrIdx] = newY
 
-				cbMut.Lock()
-				touchInputCb := windowTouchInputCb
-				cbMut.Unlock()
-
-				if touchInputCb != nil {
-					touchInputCb(
-						events.TouchPhaseMoved,
-						dpi.PhysicalPosition[float64]{
-							X: float64(newX),
-							Y: float64(newY),
-						},
-						events.TouchPointerID(ptr.id),
-					)
+				if cb := windowTouchInputCb.Load(); cb != nil {
+					if cb := (*cb); cb != nil {
+						cb(
+							events.TouchPhaseMoved,
+							dpi.PhysicalPosition[float64]{
+								X: float64(newX),
+								Y: float64(newY),
+							},
+							events.TouchPointerID(ptr.id),
+						)
+					}
 				}
 			}
 		}
@@ -297,19 +278,17 @@ func display_handle_motion_event(event *C.GameActivityMotionEvent) C.bool {
 			oldPosYs[ptrIdx] = y
 		}
 
-		cbMut.Lock()
-		touchInputCb := windowTouchInputCb
-		cbMut.Unlock()
-
-		if touchInputCb != nil {
-			touchInputCb(
-				phase,
-				dpi.PhysicalPosition[float64]{
-					X: float64(x),
-					Y: float64(y),
-				},
-				events.TouchPointerID(ptr.id),
-			)
+		if cb := windowTouchInputCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(
+					phase,
+					dpi.PhysicalPosition[float64]{
+						X: float64(x),
+						Y: float64(y),
+					},
+					events.TouchPointerID(ptr.id),
+				)
+			}
 		}
 	}
 
@@ -317,14 +296,16 @@ func display_handle_motion_event(event *C.GameActivityMotionEvent) C.bool {
 }
 
 func clearInputBuffers() {
-	ib := C.android_app_swap_input_buffers((*C.struct_android_app)(atomic.LoadPointer(&androidApp)))
-	if ib == nil {
-		return
-	}
-	if ib.motionEventsCount > 0 {
-		C.android_app_clear_motion_events(ib)
-	}
-	if ib.keyEventsCount > 0 {
-		C.android_app_clear_key_events(ib)
+	if app := androidApp.Load(); app != nil {
+		ib := C.android_app_swap_input_buffers(app)
+		if ib == nil {
+			return
+		}
+		if ib.motionEventsCount > 0 {
+			C.android_app_clear_motion_events(ib)
+		}
+		if ib.keyEventsCount > 0 {
+			C.android_app_clear_key_events(ib)
+		}
 	}
 }
