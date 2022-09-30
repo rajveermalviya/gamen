@@ -218,15 +218,10 @@ func pointerHandleEnter(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, se
 		}
 	}
 
-	w.mu.Lock()
-	var cursorEnteredCb events.WindowCursorEnteredCallback
-	if w.cursorEnteredCb != nil {
-		cursorEnteredCb = w.cursorEnteredCb
-	}
-	w.mu.Unlock()
-
-	if cursorEnteredCb != nil {
-		cursorEnteredCb()
+	if cb := w.cursorEnteredCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb()
+		}
 	}
 }
 
@@ -253,15 +248,10 @@ func pointerHandleLeave(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, se
 		return
 	}
 
-	w.mu.Lock()
-	var cursorLeftCb events.WindowCursorLeftCallback
-	if w.cursorLeftCb != nil {
-		cursorLeftCb = w.cursorLeftCb
-	}
-	w.mu.Unlock()
-
-	if cursorLeftCb != nil {
-		cursorLeftCb()
+	if cb := w.cursorLeftCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb()
+		}
 	}
 }
 
@@ -285,15 +275,10 @@ func pointerHandleMotion(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, t
 		return
 	}
 
-	w.mu.Lock()
-	var cursorMovedCb events.WindowCursorMovedCallback
-	if w.cursorMovedCb != nil {
-		cursorMovedCb = w.cursorMovedCb
-	}
-	w.mu.Unlock()
-
-	if cursorMovedCb != nil {
-		cursorMovedCb(float64(surface_x), float64(surface_y))
+	if cb := w.cursorMovedCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb(float64(surface_x), float64(surface_y))
+		}
 	}
 }
 
@@ -324,35 +309,30 @@ func pointerHandleButton(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer, s
 		return
 	}
 
-	w.mu.Lock()
-	var mouseInputCb events.WindowMouseInputCallback
-	if w.mouseInputCb != nil {
-		mouseInputCb = w.mouseInputCb
-	}
-	w.mu.Unlock()
+	if cb := w.mouseInputCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			var s events.ButtonState
+			switch state {
+			case WL_POINTER_BUTTON_STATE_PRESSED:
+				s = events.ButtonStatePressed
+			case WL_POINTER_BUTTON_STATE_RELEASED:
+				s = events.ButtonStateReleased
+			}
 
-	if mouseInputCb != nil {
-		var s events.ButtonState
-		switch state {
-		case WL_POINTER_BUTTON_STATE_PRESSED:
-			s = events.ButtonStatePressed
-		case WL_POINTER_BUTTON_STATE_RELEASED:
-			s = events.ButtonStateReleased
+			var b events.MouseButton
+			switch button {
+			case BTN_LEFT:
+				b = events.MouseButtonLeft
+			case BTN_RIGHT:
+				b = events.MouseButtonRight
+			case BTN_MIDDLE:
+				b = events.MouseButtonMiddle
+			default:
+				b = events.MouseButton(button)
+			}
+
+			cb(s, b)
 		}
-
-		var b events.MouseButton
-		switch button {
-		case BTN_LEFT:
-			b = events.MouseButtonLeft
-		case BTN_RIGHT:
-			b = events.MouseButtonRight
-		case BTN_MIDDLE:
-			b = events.MouseButtonMiddle
-		default:
-			b = events.MouseButton(button)
-		}
-
-		mouseInputCb(s, b)
 	}
 }
 
@@ -410,50 +390,51 @@ func pointerHandleFrame(data unsafe.Pointer, wl_pointer *C.struct_wl_pointer) {
 		return
 	}
 
-	w.mu.Lock()
-	var mouseWheelCb events.WindowMouseScrollCallback
-	if w.mouseWheelCb != nil {
-		mouseWheelCb = w.mouseWheelCb
-	}
-	w.mu.Unlock()
-
 	if d.pointer.lineDeltaVertical != 0 {
-		if mouseWheelCb != nil {
-			mouseWheelCb(
-				events.MouseScrollDeltaLine,
-				events.MouseScrollAxisVertical,
-				d.pointer.lineDeltaVertical,
-			)
+		if cb := w.mouseWheelCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(
+					events.MouseScrollDeltaLine,
+					events.MouseScrollAxisVertical,
+					d.pointer.lineDeltaVertical,
+				)
+			}
 		}
 
 		d.pointer.lineDeltaVertical = 0
 	} else if d.pointer.pixelDeltaVertical != 0 {
-		if mouseWheelCb != nil {
-			mouseWheelCb(
-				events.MouseScrollDeltaPixel,
-				events.MouseScrollAxisVertical,
-				d.pointer.pixelDeltaVertical,
-			)
+		if cb := w.mouseWheelCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(
+					events.MouseScrollDeltaPixel,
+					events.MouseScrollAxisVertical,
+					d.pointer.pixelDeltaVertical,
+				)
+			}
 		}
 
 		d.pointer.pixelDeltaVertical = 0
 	} else if d.pointer.lineDeltaHorizontal != 0 {
-		if mouseWheelCb != nil {
-			mouseWheelCb(
-				events.MouseScrollDeltaLine,
-				events.MouseScrollAxisHorizontal,
-				d.pointer.lineDeltaHorizontal,
-			)
+		if cb := w.mouseWheelCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(
+					events.MouseScrollDeltaLine,
+					events.MouseScrollAxisHorizontal,
+					d.pointer.lineDeltaHorizontal,
+				)
+			}
 		}
 
 		d.pointer.lineDeltaHorizontal = 0
 	} else if d.pointer.pixelDeltaHorizontal != 0 {
-		if mouseWheelCb != nil {
-			mouseWheelCb(
-				events.MouseScrollDeltaPixel,
-				events.MouseScrollAxisHorizontal,
-				d.pointer.pixelDeltaHorizontal,
-			)
+		if cb := w.mouseWheelCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(
+					events.MouseScrollDeltaPixel,
+					events.MouseScrollAxisHorizontal,
+					d.pointer.pixelDeltaHorizontal,
+				)
+			}
 		}
 
 		d.pointer.pixelDeltaHorizontal = 0

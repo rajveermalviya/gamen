@@ -26,6 +26,7 @@ import (
 	"github.com/rajveermalviya/gamen/cursors"
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 	"github.com/rajveermalviya/gamen/internal/common/mathx"
 	"github.com/rajveermalviya/gamen/internal/common/xcursor"
 )
@@ -46,27 +47,28 @@ type Window struct {
 	xdgToplevelDecoration *C.struct_zxdg_toplevel_decoration_v1
 
 	// state
-	scaleFactor        float64
-	size               dpi.LogicalSize[uint32]
-	outputs            map[*C.struct_wl_output]struct{}
-	maximized          bool
-	fullscreen         bool
-	previousCursorIcon string
-	currentCursorIcon  string
+	scaleFactor        float64                          // shared mutex
+	size               dpi.LogicalSize[uint32]          // shared mutex
+	outputs            map[*C.struct_wl_output]struct{} // shared mutex
+	previousCursorIcon string                           // shared mutex
+	currentCursorIcon  string                           // shared mutex
+
+	maximized  atomicx.Bool // shared atomic
+	fullscreen atomicx.Bool // shared atomic
 
 	// window callbacks
-	resizedCb           events.WindowResizedCallback
-	closeRequestedCb    events.WindowCloseRequestedCallback
-	focusedCb           events.WindowFocusedCallback
-	unfocusedCb         events.WindowUnfocusedCallback
-	cursorEnteredCb     events.WindowCursorEnteredCallback
-	cursorLeftCb        events.WindowCursorLeftCallback
-	cursorMovedCb       events.WindowCursorMovedCallback
-	mouseWheelCb        events.WindowMouseScrollCallback
-	mouseInputCb        events.WindowMouseInputCallback
-	modifiersChangedCb  events.WindowModifiersChangedCallback
-	keyboardInputCb     events.WindowKeyboardInputCallback
-	receivedCharacterCb events.WindowReceivedCharacterCallback
+	resizedCb           atomicx.Pointer[events.WindowResizedCallback]
+	closeRequestedCb    atomicx.Pointer[events.WindowCloseRequestedCallback]
+	focusedCb           atomicx.Pointer[events.WindowFocusedCallback]
+	unfocusedCb         atomicx.Pointer[events.WindowUnfocusedCallback]
+	cursorEnteredCb     atomicx.Pointer[events.WindowCursorEnteredCallback]
+	cursorLeftCb        atomicx.Pointer[events.WindowCursorLeftCallback]
+	cursorMovedCb       atomicx.Pointer[events.WindowCursorMovedCallback]
+	mouseWheelCb        atomicx.Pointer[events.WindowMouseScrollCallback]
+	mouseInputCb        atomicx.Pointer[events.WindowMouseInputCallback]
+	modifiersChangedCb  atomicx.Pointer[events.WindowModifiersChangedCallback]
+	keyboardInputCb     atomicx.Pointer[events.WindowKeyboardInputCallback]
+	receivedCharacterCb atomicx.Pointer[events.WindowReceivedCharacterCallback]
 }
 
 func NewWindow(d *Display) (*Window, error) {
@@ -112,18 +114,18 @@ func (w *Window) Destroy() {
 		w.mu.Lock()
 		defer w.mu.Unlock()
 
-		w.resizedCb = nil
-		w.closeRequestedCb = nil
-		w.focusedCb = nil
-		w.unfocusedCb = nil
-		w.cursorEnteredCb = nil
-		w.cursorLeftCb = nil
-		w.cursorMovedCb = nil
-		w.mouseWheelCb = nil
-		w.mouseInputCb = nil
-		w.modifiersChangedCb = nil
-		w.keyboardInputCb = nil
-		w.receivedCharacterCb = nil
+		w.resizedCb.Store(nil)
+		w.closeRequestedCb.Store(nil)
+		w.focusedCb.Store(nil)
+		w.unfocusedCb.Store(nil)
+		w.cursorEnteredCb.Store(nil)
+		w.cursorLeftCb.Store(nil)
+		w.cursorMovedCb.Store(nil)
+		w.mouseWheelCb.Store(nil)
+		w.mouseInputCb.Store(nil)
+		w.modifiersChangedCb.Store(nil)
+		w.keyboardInputCb.Store(nil)
+		w.receivedCharacterCb.Store(nil)
 
 		if _, ok := w.d.windows[w.surface]; ok {
 			w.d.windows[w.surface] = nil
@@ -185,12 +187,10 @@ func (w *Window) SetInnerSize(size dpi.Size[uint32]) {
 	w.size = logicalSize
 
 	w.d.scheduleCallback(func() {
-		w.mu.Lock()
-		resizedCb := w.resizedCb
-		w.mu.Unlock()
-
-		if resizedCb != nil {
-			resizedCb(width, height, scaleFactor)
+		if cb := w.resizedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(width, height, scaleFactor)
+			}
 		}
 	})
 }
@@ -224,9 +224,7 @@ func (w *Window) SetMaxInnerSize(size dpi.Size[uint32]) {
 }
 
 func (w *Window) Maximized() bool {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.maximized
+	return w.maximized.Load()
 }
 func (w *Window) SetMinimized() {
 	w.d.l.xdg_toplevel_set_minimized(w.xdgToplevel)
@@ -247,11 +245,15 @@ func (w *Window) SetCursorIcon(icon cursors.Icon) {
 		return
 	}
 
+	w.mu.Lock()
+	scaleFactor := w.scaleFactor
+	w.mu.Unlock()
+
 	var cursor *C.struct_wl_cursor
 	var name string
 	for _, n := range xcursor.ToXcursorName(icon) {
 		name = n
-		cursor = w.d.pointer.loadCursor(n, 24, w.scaleFactor)
+		cursor = w.d.pointer.loadCursor(n, 24, scaleFactor)
 		if cursor != nil {
 			break
 		}
@@ -281,8 +283,9 @@ func (w *Window) SetCursorIcon(icon cursors.Icon) {
 
 	w.mu.Lock()
 	w.currentCursorIcon = name
+	scaleFactor = w.scaleFactor
 	w.mu.Unlock()
-	w.d.pointer.setCursor(cursor, name, w.scaleFactor)
+	w.d.pointer.setCursor(cursor, name, scaleFactor)
 }
 
 func (w *Window) SetCursorVisible(visible bool) {
@@ -338,9 +341,7 @@ func (w *Window) SetFullscreen(fullscreen bool) {
 }
 
 func (w *Window) Fullscreen() bool {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.fullscreen
+	return w.fullscreen.Load()
 }
 
 func (w *Window) DragWindow() {
@@ -379,72 +380,49 @@ func (w *Window) Decorated() bool {
 }
 
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
-	w.mu.Lock()
-	w.closeRequestedCb = cb
-	w.mu.Unlock()
+	w.closeRequestedCb.Store(&cb)
 }
 func (w *Window) SetResizedCallback(cb events.WindowResizedCallback) {
-	w.mu.Lock()
-	w.resizedCb = cb
-	w.mu.Unlock()
+	w.resizedCb.Store(&cb)
 }
 func (w *Window) SetFocusedCallback(cb events.WindowFocusedCallback) {
-	w.mu.Lock()
-	w.focusedCb = cb
-	w.mu.Unlock()
+	w.focusedCb.Store(&cb)
 }
 func (w *Window) SetUnfocusedCallback(cb events.WindowUnfocusedCallback) {
-	w.mu.Lock()
-	w.unfocusedCb = cb
-	w.mu.Unlock()
+	w.unfocusedCb.Store(&cb)
 }
 func (w *Window) SetCursorEnteredCallback(cb events.WindowCursorEnteredCallback) {
-	w.mu.Lock()
-	w.cursorEnteredCb = cb
-	w.mu.Unlock()
+	w.cursorEnteredCb.Store(&cb)
 }
 func (w *Window) SetCursorLeftCallback(cb events.WindowCursorLeftCallback) {
-	w.mu.Lock()
-	w.cursorLeftCb = cb
-	w.mu.Unlock()
+	w.cursorLeftCb.Store(&cb)
 }
 func (w *Window) SetCursorMovedCallback(cb events.WindowCursorMovedCallback) {
-	w.mu.Lock()
-	w.cursorMovedCb = cb
-	w.mu.Unlock()
+	w.cursorMovedCb.Store(&cb)
 }
 func (w *Window) SetMouseScrollCallback(cb events.WindowMouseScrollCallback) {
-	w.mu.Lock()
-	w.mouseWheelCb = cb
-	w.mu.Unlock()
+	w.mouseWheelCb.Store(&cb)
 }
 func (w *Window) SetMouseInputCallback(cb events.WindowMouseInputCallback) {
-	w.mu.Lock()
-	w.mouseInputCb = cb
-	w.mu.Unlock()
+	w.mouseInputCb.Store(&cb)
 }
 func (w *Window) SetTouchInputCallback(cb events.WindowTouchInputCallback) {
 	// TODO:
 }
 func (w *Window) SetModifiersChangedCallback(cb events.WindowModifiersChangedCallback) {
-	w.mu.Lock()
-	w.modifiersChangedCb = cb
-	w.mu.Unlock()
+	w.modifiersChangedCb.Store(&cb)
 }
 func (w *Window) SetKeyboardInputCallback(cb events.WindowKeyboardInputCallback) {
-	w.mu.Lock()
-	w.keyboardInputCb = cb
-	w.mu.Unlock()
+	w.keyboardInputCb.Store(&cb)
 }
 func (w *Window) SetReceivedCharacterCallback(cb events.WindowReceivedCharacterCallback) {
-	w.mu.Lock()
-	w.receivedCharacterCb = cb
-	w.mu.Unlock()
+	w.receivedCharacterCb.Store(&cb)
 }
 
-// caller must lock window
 func (w *Window) updateScaleFactor() {
 	var scaleFactor float64 = 1
+
+	w.mu.Lock()
 	for output := range w.outputs {
 		o, ok := w.d.outputs[output]
 		if ok {
@@ -453,27 +431,26 @@ func (w *Window) updateScaleFactor() {
 	}
 
 	if w.scaleFactor == scaleFactor {
+		w.mu.Unlock()
 		return
 	}
-
 	w.scaleFactor = scaleFactor
+	logicalSize := w.size
+	physicalSize := logicalSize.ToPhysical(scaleFactor)
+	w.mu.Unlock()
+
 	w.d.l.wl_surface_set_buffer_scale(w.surface, C.int32_t(scaleFactor))
 	w.d.l.wl_surface_commit(w.surface)
 
-	physicalSize := w.size.ToPhysical(scaleFactor)
-
-	var resizedCb events.WindowResizedCallback
-	if w.resizedCb != nil {
-		resizedCb = w.resizedCb
-	}
-
 	w.d.scheduleCallback(func() {
-		if resizedCb != nil {
-			resizedCb(
-				physicalSize.Width,
-				physicalSize.Height,
-				scaleFactor,
-			)
+		if cb := w.resizedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(
+					physicalSize.Width,
+					physicalSize.Height,
+					scaleFactor,
+				)
+			}
 		}
 	})
 }
@@ -486,9 +463,9 @@ func windowSurfaceHandleEnter(data unsafe.Pointer, wl_surface *C.struct_wl_surfa
 	}
 
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	w.outputs[output] = struct{}{}
+	w.mu.Unlock()
+
 	w.updateScaleFactor()
 }
 
@@ -500,9 +477,9 @@ func windowSurfaceHandleLeave(data unsafe.Pointer, wl_surface *C.struct_wl_surfa
 	}
 
 	w.mu.Lock()
-	defer w.mu.Unlock()
-
 	delete(w.outputs, output)
+	w.mu.Unlock()
+
 	w.updateScaleFactor()
 }
 
@@ -539,32 +516,29 @@ func xdgToplevelHandleConfigure(data unsafe.Pointer, xdg_toplevel *C.struct_xdg_
 		}
 	}
 
-	w.mu.Lock()
-
-	w.maximized = maximized
-	w.fullscreen = fullscreen
-
-	w.size = dpi.LogicalSize[uint32]{
+	logicalSize := dpi.LogicalSize[uint32]{
 		Width:  uint32(width),
 		Height: uint32(height),
 	}
 
+	w.maximized.Store(maximized)
+	w.fullscreen.Store(fullscreen)
+
+	w.mu.Lock()
+	w.size = logicalSize
 	scaleFactor := w.scaleFactor
-	physicalSize := w.size.ToPhysical(scaleFactor)
-
-	var resizedCb events.WindowResizedCallback
-	if w.resizedCb != nil {
-		resizedCb = w.resizedCb
-	}
-
 	w.mu.Unlock()
 
-	if resizedCb != nil {
-		resizedCb(
-			physicalSize.Width,
-			physicalSize.Height,
-			scaleFactor,
-		)
+	physicalSize := logicalSize.ToPhysical(scaleFactor)
+
+	if cb := w.resizedCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb(
+				physicalSize.Width,
+				physicalSize.Height,
+				scaleFactor,
+			)
+		}
 	}
 }
 
@@ -575,14 +549,9 @@ func xdgToplevelHandleClose(data unsafe.Pointer, xdg_toplevel *C.struct_xdg_topl
 		return
 	}
 
-	w.mu.Lock()
-	var closeRequestedCb events.WindowCloseRequestedCallback
-	if w.closeRequestedCb != nil {
-		closeRequestedCb = w.closeRequestedCb
-	}
-	w.mu.Unlock()
-
-	if closeRequestedCb != nil {
-		closeRequestedCb()
+	if cb := w.closeRequestedCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb()
+		}
 	}
 }

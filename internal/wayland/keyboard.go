@@ -93,27 +93,19 @@ func keyboardHandleEnter(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard,
 		return
 	}
 
-	w.mu.Lock()
-	var focusedCb events.WindowFocusedCallback
-	if w.focusedCb != nil {
-		focusedCb = w.focusedCb
+	if cb := w.focusedCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb()
+		}
 	}
-	w.mu.Unlock()
-
-	if focusedCb != nil {
-		focusedCb()
-	}
-
-	w.mu.Lock()
-	var modifiersChangedCb events.WindowModifiersChangedCallback
-	if w.modifiersChangedCb != nil {
-		modifiersChangedCb = w.modifiersChangedCb
-	}
-	w.mu.Unlock()
 
 	// send modifiers that are already pressed
-	if modifiersChangedCb != nil && k.modifiers != 0 {
-		modifiersChangedCb(k.modifiers)
+	if k.modifiers != 0 {
+		if cb := w.modifiersChangedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(k.modifiers)
+			}
+		}
 	}
 }
 
@@ -130,27 +122,19 @@ func keyboardHandleLeave(data unsafe.Pointer, wl_keyboard *C.struct_wl_keyboard,
 		return
 	}
 
-	w.mu.Lock()
-	var modifiersChangedCb events.WindowModifiersChangedCallback
-	if w.modifiersChangedCb != nil {
-		modifiersChangedCb = w.modifiersChangedCb
-	}
-	w.mu.Unlock()
-
 	// remove modifiers if pressed
-	if modifiersChangedCb != nil && k.modifiers != 0 {
-		modifiersChangedCb(0)
+	if k.modifiers != 0 {
+		if cb := w.modifiersChangedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(0)
+			}
+		}
 	}
 
-	w.mu.Lock()
-	var unfocusedCb events.WindowUnfocusedCallback
-	if w.unfocusedCb != nil {
-		unfocusedCb = w.unfocusedCb
-	}
-	w.mu.Unlock()
-
-	if unfocusedCb != nil {
-		unfocusedCb()
+	if cb := w.unfocusedCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb()
+		}
 	}
 
 	k.repeatKey = 0
@@ -200,40 +184,32 @@ func (k *Keyboard) handleKeyEvent(key C.uint32_t, state enum_wl_keyboard_key_sta
 	key += 8
 	sym := xkb.GetOneSym(xkbcommon.KeyCode(key))
 
-	w.mu.Lock()
-	var keyboardInputCb events.WindowKeyboardInputCallback
-	if w.keyboardInputCb != nil {
-		keyboardInputCb = w.keyboardInputCb
-	}
-	w.mu.Unlock()
+	if cb := w.keyboardInputCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			var buttonState events.ButtonState
+			switch state {
+			case WL_KEYBOARD_KEY_STATE_PRESSED:
+				buttonState = events.ButtonStatePressed
+			case WL_KEYBOARD_KEY_STATE_RELEASED:
+				buttonState = events.ButtonStateReleased
+			}
 
-	if keyboardInputCb != nil {
-		var buttonState events.ButtonState
-		switch state {
-		case WL_KEYBOARD_KEY_STATE_PRESSED:
-			buttonState = events.ButtonStatePressed
-		case WL_KEYBOARD_KEY_STATE_RELEASED:
-			buttonState = events.ButtonStateReleased
+			cb(
+				buttonState,
+				events.ScanCode(key),
+				xkbcommon.KeySymToVirtualKey(sym),
+			)
 		}
-
-		keyboardInputCb(
-			buttonState,
-			events.ScanCode(key),
-			xkbcommon.KeySymToVirtualKey(sym),
-		)
 	}
 
-	w.mu.Lock()
-	var receivedCharacterCb events.WindowReceivedCharacterCallback
-	if w.receivedCharacterCb != nil {
-		receivedCharacterCb = w.receivedCharacterCb
-	}
-	w.mu.Unlock()
-
-	if state == WL_KEYBOARD_KEY_STATE_PRESSED && receivedCharacterCb != nil {
-		utf8 := xkb.GetUtf8(xkbcommon.KeyCode(key), xkbcommon.KeySym(sym))
-		for _, char := range utf8 {
-			receivedCharacterCb(char)
+	if state == WL_KEYBOARD_KEY_STATE_PRESSED {
+		if cb := w.receivedCharacterCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				utf8 := xkb.GetUtf8(xkbcommon.KeyCode(key), xkbcommon.KeySym(sym))
+				for _, char := range utf8 {
+					cb(char)
+				}
+			}
 		}
 	}
 }
@@ -287,15 +263,10 @@ func keyboardHandleModifiers(data unsafe.Pointer, wl_keyboard *C.struct_wl_keybo
 		return
 	}
 
-	w.mu.Lock()
-	var modifiersChangedCb events.WindowModifiersChangedCallback
-	if w.modifiersChangedCb != nil {
-		modifiersChangedCb = w.modifiersChangedCb
-	}
-	w.mu.Unlock()
-
-	if modifiersChangedCb != nil {
-		modifiersChangedCb(m)
+	if cb := w.modifiersChangedCb.Load(); cb != nil {
+		if cb := (*cb); cb != nil {
+			cb(m)
+		}
 	}
 }
 

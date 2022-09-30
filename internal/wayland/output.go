@@ -106,10 +106,6 @@ func outputHandleDone(data unsafe.Pointer, wl_output *C.struct_wl_output) {
 	}
 
 	for _, w := range d.windows {
-		func(w *Window) {
-			w.mu.Lock()
-			defer w.mu.Unlock()
-			w.updateScaleFactor()
-		}(w)
+		w.updateScaleFactor()
 	}
 }
