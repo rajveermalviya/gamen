@@ -24,10 +24,10 @@ import (
 	"errors"
 	"log"
 	"runtime/cgo"
-	"sync"
 	"time"
 	"unsafe"
 
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 	"github.com/rajveermalviya/gamen/internal/common/mathx"
 	"github.com/rajveermalviya/gamen/internal/xkbcommon"
 	"golang.org/x/sys/unix"
@@ -40,7 +40,8 @@ type Display struct {
 	handle *cgo.Handle
 	// we allow destroy function to be called multiple
 	// times, but in reality we run it once
-	destroyOnce sync.Once
+	destroyRequested atomicx.Bool
+	destroyed        atomicx.Bool
 
 	// wayland objects
 	display              *C.struct_wl_display
@@ -106,80 +107,84 @@ func NewDisplay() (*Display, error) {
 }
 
 func (d *Display) Destroy() {
-	d.destroyOnce.Do(func() {
-		// destroy all the windows
-		for s, w := range d.windows {
-			w.Destroy()
-			d.windows[s] = nil
-			delete(d.windows, s)
-		}
+	d.destroyRequested.Store(true)
+}
 
-		if d.keyboard != nil {
-			d.keyboard.destroy()
-			d.keyboard = nil
-		}
+func (d *Display) destroy() {
+	// destroy all the windows
+	for s, w := range d.windows {
+		w.Destroy()
+		d.windows[s] = nil
+		delete(d.windows, s)
+	}
 
-		if d.pointer != nil && d.pointer.pointer != nil {
-			d.pointer.destroy()
-			d.pointer = nil
-		}
+	if d.keyboard != nil {
+		d.keyboard.destroy()
+		d.keyboard = nil
+	}
 
-		if d.xkb != nil {
-			d.xkb.Destroy()
-			d.xkb = nil
-		}
+	if d.pointer != nil && d.pointer.pointer != nil {
+		d.pointer.destroy()
+		d.pointer = nil
+	}
 
-		if d.seat != nil {
-			d.l.wl_seat_destroy(d.seat)
-			d.seat = nil
-		}
+	if d.xkb != nil {
+		d.xkb.Destroy()
+		d.xkb = nil
+	}
 
-		if d.xdgDecorationManager != nil {
-			d.l.zxdg_decoration_manager_v1_destroy(d.xdgDecorationManager)
-			d.xdgDecorationManager = nil
-		}
+	if d.seat != nil {
+		d.l.wl_seat_destroy(d.seat)
+		d.seat = nil
+	}
 
-		if d.xdgWmBase != nil {
-			d.l.xdg_wm_base_destroy(d.xdgWmBase)
-			d.xdgWmBase = nil
-		}
+	if d.xdgDecorationManager != nil {
+		d.l.zxdg_decoration_manager_v1_destroy(d.xdgDecorationManager)
+		d.xdgDecorationManager = nil
+	}
 
-		for output := range d.outputs {
-			d.l.wl_output_destroy(output)
-			d.outputs[output] = nil
-			delete(d.outputs, output)
-		}
+	if d.xdgWmBase != nil {
+		d.l.xdg_wm_base_destroy(d.xdgWmBase)
+		d.xdgWmBase = nil
+	}
 
-		if d.shm != nil {
-			d.l.wl_shm_destroy(d.shm)
-			d.shm = nil
-		}
+	for output := range d.outputs {
+		d.l.wl_output_destroy(output)
+		d.outputs[output] = nil
+		delete(d.outputs, output)
+	}
 
-		if d.compositor != nil {
-			d.l.wl_compositor_destroy(d.compositor)
-			d.compositor = nil
-		}
+	if d.shm != nil {
+		d.l.wl_shm_destroy(d.shm)
+		d.shm = nil
+	}
 
-		if d.registry != nil {
-			d.l.wl_registry_destroy(d.registry)
-			d.registry = nil
-		}
+	if d.compositor != nil {
+		d.l.wl_compositor_destroy(d.compositor)
+		d.compositor = nil
+	}
 
-		if d.display != nil {
-			d.l.wl_display_disconnect(d.display)
-			d.display = nil
-		}
+	if d.registry != nil {
+		d.l.wl_registry_destroy(d.registry)
+		d.registry = nil
+	}
 
-		if d.handle != nil {
-			d.handle.Delete()
-			d.handle = nil
-		}
+	if d.display != nil {
+		d.l.wl_display_disconnect(d.display)
+		d.display = nil
+	}
 
-		if d.l != nil {
-			d.l.close()
-			d.l = nil
-		}
-	})
+	if d.handle != nil {
+		d.handle.Delete()
+		d.handle = nil
+	}
+
+	if d.l != nil {
+		d.l.close()
+		d.l = nil
+	}
+
+	d.destroyed.Store(true)
 }
 
 // wayland defers key repeat to clients
@@ -225,7 +230,14 @@ func (d *Display) handleRepeatKeyFromPoll() {
 
 func (d *Display) Poll() bool {
 	d.handleRepeatKeyFromPoll()
-	return d.pollAndDispatchEvents(0) != -1
+	r := d.pollAndDispatchEvents(0)
+
+	if d.destroyRequested.Load() && !d.destroyed.Load() {
+		d.destroy()
+		return false
+	}
+
+	return r != -1
 }
 
 func (d *Display) Wait() bool {
@@ -240,7 +252,14 @@ func (d *Display) Wait() bool {
 		}
 	}
 
-	return d.pollAndDispatchEvents(-1) != -1
+	r := d.pollAndDispatchEvents(-1)
+
+	if d.destroyRequested.Load() && !d.destroyed.Load() {
+		d.destroy()
+		return false
+	}
+
+	return r != -1
 }
 
 func (d *Display) WaitTimeout(timeout time.Duration) bool {
@@ -255,7 +274,14 @@ func (d *Display) WaitTimeout(timeout time.Duration) bool {
 		}
 	}
 
-	return d.pollAndDispatchEvents(timeout) != -1
+	r := d.pollAndDispatchEvents(timeout)
+
+	if d.destroyRequested.Load() && !d.destroyed.Load() {
+		d.destroy()
+		return false
+	}
+
+	return r != -1
 }
 
 // schedule's a callback to run on main eventqueue and main thread
@@ -427,12 +453,8 @@ func poll(fds []unix.PollFd, timeout time.Duration) bool {
 }
 
 // loose port of wl_display_dispatch to handle timeouts
-// TODO: move this to C
+// TODO: maybe move this to C
 func (d *Display) pollAndDispatchEvents(timeout time.Duration) (ret C.int) {
-	if d.display == nil {
-		return -1
-	}
-
 	var errno error
 	if ret = d.l.wl_display_prepare_read(d.display); ret == -1 {
 		ret = d.l.wl_display_dispatch_pending(d.display)
