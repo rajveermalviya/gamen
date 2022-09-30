@@ -112,10 +112,8 @@ func (d *Display) Destroy() {
 
 func (d *Display) destroy() {
 	// destroy all the windows
-	for s, w := range d.windows {
+	for _, w := range d.windows {
 		w.Destroy()
-		d.windows[s] = nil
-		delete(d.windows, s)
 	}
 
 	if d.keyboard != nil {

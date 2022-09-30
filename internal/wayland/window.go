@@ -111,9 +111,6 @@ func (w *Window) WlSurface() unsafe.Pointer { return unsafe.Pointer(w.surface) }
 
 func (w *Window) Destroy() {
 	w.destroyOnce.Do(func() {
-		w.mu.Lock()
-		defer w.mu.Unlock()
-
 		w.resizedCb.Store(nil)
 		w.closeRequestedCb.Store(nil)
 		w.focusedCb.Store(nil)
