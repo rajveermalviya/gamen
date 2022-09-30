@@ -45,9 +45,6 @@ type Display interface {
 	WaitTimeout(time.Duration) bool
 }
 
-// Window is a window
-//
-// Its methods can be called from any goroutine
 type Window interface {
 	// Destroys the window, it must not be used after this point.
 	//
@@ -210,7 +207,7 @@ type AndroidWindowExt interface {
 	//
 	EnableIme()
 
-	// EnableIme hides the software keyboard
+	// DisableIme hides the software keyboard
 	//
 	DisableIme()
 }

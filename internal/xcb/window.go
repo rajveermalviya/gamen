@@ -22,6 +22,7 @@ import (
 	"github.com/rajveermalviya/gamen/cursors"
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 	"github.com/rajveermalviya/gamen/internal/common/mathx"
 )
 
@@ -35,24 +36,25 @@ type Window struct {
 	mu          sync.Mutex
 
 	// state
-	cursorPos          dpi.PhysicalPosition[float64]
-	size               dpi.PhysicalSize[uint32]
-	previousCursorIcon cursors.Icon
-	currentCursorIcon  cursors.Icon
+	previousCursorIcon cursors.Icon // shared mutex
+	currentCursorIcon  cursors.Icon // shared mutex
+
+	size      dpi.PhysicalSize[uint32]      // non-shared
+	cursorPos dpi.PhysicalPosition[float64] // non-shared
 
 	// callbacks
-	resizedCb           events.WindowResizedCallback
-	closeRequestedCb    events.WindowCloseRequestedCallback
-	focusedCb           events.WindowFocusedCallback
-	unfocusedCb         events.WindowUnfocusedCallback
-	cursorEnteredCb     events.WindowCursorEnteredCallback
-	cursorLeftCb        events.WindowCursorLeftCallback
-	cursorMovedCb       events.WindowCursorMovedCallback
-	mouseWheelCb        events.WindowMouseScrollCallback
-	mouseInputCb        events.WindowMouseInputCallback
-	modifiersChangedCb  events.WindowModifiersChangedCallback
-	keyboardInputCb     events.WindowKeyboardInputCallback
-	receivedCharacterCb events.WindowReceivedCharacterCallback
+	resizedCb           atomicx.Pointer[events.WindowResizedCallback]
+	closeRequestedCb    atomicx.Pointer[events.WindowCloseRequestedCallback]
+	focusedCb           atomicx.Pointer[events.WindowFocusedCallback]
+	unfocusedCb         atomicx.Pointer[events.WindowUnfocusedCallback]
+	cursorEnteredCb     atomicx.Pointer[events.WindowCursorEnteredCallback]
+	cursorLeftCb        atomicx.Pointer[events.WindowCursorLeftCallback]
+	cursorMovedCb       atomicx.Pointer[events.WindowCursorMovedCallback]
+	mouseWheelCb        atomicx.Pointer[events.WindowMouseScrollCallback]
+	mouseInputCb        atomicx.Pointer[events.WindowMouseInputCallback]
+	modifiersChangedCb  atomicx.Pointer[events.WindowModifiersChangedCallback]
+	keyboardInputCb     atomicx.Pointer[events.WindowKeyboardInputCallback]
+	receivedCharacterCb atomicx.Pointer[events.WindowReceivedCharacterCallback]
 }
 
 func NewWindow(d *Display) (*Window, error) {
@@ -144,6 +146,8 @@ func NewWindow(d *Display) (*Window, error) {
 		}
 	}
 
+	d.l.xcb_flush(d.xcbConn)
+
 	d.windows[win] = w
 	return w, nil
 }
@@ -179,21 +183,18 @@ func (w *Window) SetTitle(title string) {
 
 func (w *Window) Destroy() {
 	w.destroyOnce.Do(func() {
-		w.mu.Lock()
-		defer w.mu.Unlock()
-
-		w.resizedCb = nil
-		w.closeRequestedCb = nil
-		w.focusedCb = nil
-		w.unfocusedCb = nil
-		w.cursorEnteredCb = nil
-		w.cursorLeftCb = nil
-		w.cursorMovedCb = nil
-		w.mouseWheelCb = nil
-		w.mouseInputCb = nil
-		w.modifiersChangedCb = nil
-		w.keyboardInputCb = nil
-		w.receivedCharacterCb = nil
+		w.resizedCb.Store(nil)
+		w.closeRequestedCb.Store(nil)
+		w.focusedCb.Store(nil)
+		w.unfocusedCb.Store(nil)
+		w.cursorEnteredCb.Store(nil)
+		w.cursorLeftCb.Store(nil)
+		w.cursorMovedCb.Store(nil)
+		w.mouseWheelCb.Store(nil)
+		w.mouseInputCb.Store(nil)
+		w.modifiersChangedCb.Store(nil)
+		w.keyboardInputCb.Store(nil)
+		w.receivedCharacterCb.Store(nil)
 
 		if _, ok := w.d.windows[w.win]; ok {
 			w.d.windows[w.win] = nil
@@ -589,65 +590,41 @@ func (w *Window) Decorated() bool {
 }
 
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
-	w.mu.Lock()
-	w.closeRequestedCb = cb
-	w.mu.Unlock()
+	w.closeRequestedCb.Store(&cb)
 }
 func (w *Window) SetResizedCallback(cb events.WindowResizedCallback) {
-	w.mu.Lock()
-	w.resizedCb = cb
-	w.mu.Unlock()
+	w.resizedCb.Store(&cb)
 }
 func (w *Window) SetFocusedCallback(cb events.WindowFocusedCallback) {
-	w.mu.Lock()
-	w.focusedCb = cb
-	w.mu.Unlock()
+	w.focusedCb.Store(&cb)
 }
 func (w *Window) SetUnfocusedCallback(cb events.WindowUnfocusedCallback) {
-	w.mu.Lock()
-	w.unfocusedCb = cb
-	w.mu.Unlock()
+	w.unfocusedCb.Store(&cb)
 }
 func (w *Window) SetCursorEnteredCallback(cb events.WindowCursorEnteredCallback) {
-	w.mu.Lock()
-	w.cursorEnteredCb = cb
-	w.mu.Unlock()
+	w.cursorEnteredCb.Store(&cb)
 }
 func (w *Window) SetCursorLeftCallback(cb events.WindowCursorLeftCallback) {
-	w.mu.Lock()
-	w.cursorLeftCb = cb
-	w.mu.Unlock()
+	w.cursorLeftCb.Store(&cb)
 }
 func (w *Window) SetCursorMovedCallback(cb events.WindowCursorMovedCallback) {
-	w.mu.Lock()
-	w.cursorMovedCb = cb
-	w.mu.Unlock()
+	w.cursorMovedCb.Store(&cb)
 }
 func (w *Window) SetMouseScrollCallback(cb events.WindowMouseScrollCallback) {
-	w.mu.Lock()
-	w.mouseWheelCb = cb
-	w.mu.Unlock()
+	w.mouseWheelCb.Store(&cb)
 }
 func (w *Window) SetMouseInputCallback(cb events.WindowMouseInputCallback) {
-	w.mu.Lock()
-	w.mouseInputCb = cb
-	w.mu.Unlock()
+	w.mouseInputCb.Store(&cb)
 }
 func (w *Window) SetTouchInputCallback(cb events.WindowTouchInputCallback) {
 	// TODO:
 }
 func (w *Window) SetModifiersChangedCallback(cb events.WindowModifiersChangedCallback) {
-	w.mu.Lock()
-	w.modifiersChangedCb = cb
-	w.mu.Unlock()
+	w.modifiersChangedCb.Store(&cb)
 }
 func (w *Window) SetKeyboardInputCallback(cb events.WindowKeyboardInputCallback) {
-	w.mu.Lock()
-	w.keyboardInputCb = cb
-	w.mu.Unlock()
+	w.keyboardInputCb.Store(&cb)
 }
 func (w *Window) SetReceivedCharacterCallback(cb events.WindowReceivedCharacterCallback) {
-	w.mu.Lock()
-	w.receivedCharacterCb = cb
-	w.mu.Unlock()
+	w.receivedCharacterCb.Store(&cb)
 }

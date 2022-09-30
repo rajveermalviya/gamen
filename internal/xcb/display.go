@@ -40,6 +40,7 @@ type Display struct {
 	// times, but in reality we run it once
 	destroyRequested atomicx.Bool
 	destroyed        atomicx.Bool
+	doneFirstLoop    bool
 
 	xlibDisp *C.Display
 	xcbConn  *C.struct_xcb_connection_t
@@ -56,14 +57,15 @@ type Display struct {
 	deviceID      int32
 	firstXkbEvent C.uint8_t
 
-	windows          map[C.xcb_window_t]*Window
-	scrollingDevices map[C.xcb_input_device_id_t]scrollingDevice
-	cursors          map[cursors.Icon]C.xcb_cursor_t
+	// state
+	cursors            map[cursors.Icon]C.xcb_cursor_t // shared mutex
+	lastMousePositionX C.xcb_input_fp1616_t            // shared mutex
+	lastMousePositionY C.xcb_input_fp1616_t            // shared mutex
 
-	focus              C.xcb_window_t
-	modifiers          events.ModifiersState
-	lastMousePositionX C.xcb_input_fp1616_t
-	lastMousePositionY C.xcb_input_fp1616_t
+	windows          map[C.xcb_window_t]*Window                  // non-shared
+	scrollingDevices map[C.xcb_input_device_id_t]scrollingDevice // non-shared
+	focus            C.xcb_window_t                              // non-shared
+	modifiers        events.ModifiersState                       // non-shared
 
 	// atoms
 	wmProtocols             C.xcb_atom_t
@@ -240,6 +242,11 @@ func (d *Display) Poll() bool {
 }
 
 func (d *Display) Wait() bool {
+	if !d.doneFirstLoop {
+		d.doneFirstLoop = true
+		return d.Poll()
+	}
+
 	fds := []unix.PollFd{{
 		Fd:     int32(d.l.xcb_get_file_descriptor(d.xcbConn)),
 		Events: unix.POLLIN,
@@ -252,6 +259,11 @@ func (d *Display) Wait() bool {
 }
 
 func (d *Display) WaitTimeout(timeout time.Duration) bool {
+	if !d.doneFirstLoop {
+		d.doneFirstLoop = true
+		return d.Poll()
+	}
+
 	fds := []unix.PollFd{{
 		Fd:     int32(d.l.xcb_get_file_descriptor(d.xcbConn)),
 		Events: unix.POLLIN,
@@ -312,19 +324,17 @@ func (d *Display) Destroy() {
 }
 
 func (d *Display) destroy() {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-
-	for id, w := range d.windows {
+	for _, w := range d.windows {
 		w.Destroy()
-
-		d.windows[id] = nil
-		delete(d.windows, id)
 	}
 
-	for i, c := range d.cursors {
-		d.l.xcb_free_cursor(d.xcbConn, c)
-		delete(d.cursors, i)
+	{
+		d.mu.Lock()
+		for i, c := range d.cursors {
+			d.l.xcb_free_cursor(d.xcbConn, c)
+			delete(d.cursors, i)
+		}
+		d.mu.Unlock()
 	}
 
 	if d.xkb != nil {
@@ -364,16 +374,14 @@ func (d *Display) processEvent(e *C.xcb_generic_event_t) {
 		}
 
 		w.mu.Lock()
-		var resizedCb events.WindowResizedCallback
-		if w.resizedCb != nil {
-			resizedCb = w.resizedCb
-		}
 		if w.size != size {
 			w.size = size
 			w.mu.Unlock()
 
-			if resizedCb != nil {
-				resizedCb(size.Width, size.Height, 1)
+			if cb := w.resizedCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(size.Width, size.Height, 1)
+				}
 			}
 		} else {
 			w.mu.Unlock()
@@ -390,15 +398,10 @@ func (d *Display) processEvent(e *C.xcb_generic_event_t) {
 		data32 := unsafe.Slice((*C.xcb_atom_t)(unsafe.Pointer(&ev.data)), 5)
 		if data32[0] == d.wmDeleteWindow {
 
-			w.mu.Lock()
-			var closeRequestedCb events.WindowCloseRequestedCallback
-			if w.closeRequestedCb != nil {
-				closeRequestedCb = w.closeRequestedCb
-			}
-			w.mu.Unlock()
-
-			if closeRequestedCb != nil {
-				closeRequestedCb()
+			if cb := w.closeRequestedCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb()
+				}
 			}
 		}
 
@@ -412,32 +415,22 @@ func (d *Display) processEvent(e *C.xcb_generic_event_t) {
 
 		sym := d.xkb.GetOneSym(xkbcommon.KeyCode(ev.detail))
 
-		w.mu.Lock()
-		var keyboardInputCb events.WindowKeyboardInputCallback
-		if w.keyboardInputCb != nil {
-			keyboardInputCb = w.keyboardInputCb
-		}
-		w.mu.Unlock()
-
-		if keyboardInputCb != nil {
-			keyboardInputCb(
-				events.ButtonStatePressed,
-				events.ScanCode(ev.detail),
-				xkbcommon.KeySymToVirtualKey(sym),
-			)
+		if cb := w.keyboardInputCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(
+					events.ButtonStatePressed,
+					events.ScanCode(ev.detail),
+					xkbcommon.KeySymToVirtualKey(sym),
+				)
+			}
 		}
 
-		w.mu.Lock()
-		var receivedCharacterCb events.WindowReceivedCharacterCallback
-		if w.receivedCharacterCb != nil {
-			receivedCharacterCb = w.receivedCharacterCb
-		}
-		w.mu.Unlock()
-
-		if receivedCharacterCb != nil {
-			utf8 := d.xkb.GetUtf8(xkbcommon.KeyCode(ev.detail), xkbcommon.KeySym(sym))
-			for _, char := range utf8 {
-				receivedCharacterCb(char)
+		if cb := w.receivedCharacterCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				utf8 := d.xkb.GetUtf8(xkbcommon.KeyCode(ev.detail), xkbcommon.KeySym(sym))
+				for _, char := range utf8 {
+					cb(char)
+				}
 			}
 		}
 
@@ -449,21 +442,16 @@ func (d *Display) processEvent(e *C.xcb_generic_event_t) {
 			return
 		}
 
-		w.mu.Lock()
-		var keyboardInputCb events.WindowKeyboardInputCallback
-		if w.keyboardInputCb != nil {
-			keyboardInputCb = w.keyboardInputCb
-		}
-		w.mu.Unlock()
+		if cb := w.keyboardInputCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				sym := d.xkb.GetOneSym(xkbcommon.KeyCode(ev.detail))
 
-		if keyboardInputCb != nil {
-			sym := d.xkb.GetOneSym(xkbcommon.KeyCode(ev.detail))
-
-			keyboardInputCb(
-				events.ButtonStateReleased,
-				events.ScanCode(ev.detail),
-				xkbcommon.KeySymToVirtualKey(sym),
-			)
+				cb(
+					events.ButtonStateReleased,
+					events.ScanCode(ev.detail),
+					xkbcommon.KeySymToVirtualKey(sym),
+				)
+			}
 		}
 
 	case C.XCB_GE_GENERIC:
@@ -511,15 +499,10 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 			return
 		}
 
-		w.mu.Lock()
-		var cursorEnteredCb events.WindowCursorEnteredCallback
-		if w.cursorEnteredCb != nil {
-			cursorEnteredCb = w.cursorEnteredCb
-		}
-		w.mu.Unlock()
-
-		if cursorEnteredCb != nil {
-			cursorEnteredCb()
+		if cb := w.cursorEnteredCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb()
+			}
 		}
 
 	case C.XCB_INPUT_LEAVE:
@@ -530,15 +513,10 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 			return
 		}
 
-		w.mu.Lock()
-		var cursorLeftCb events.WindowCursorLeftCallback
-		if w.cursorLeftCb != nil {
-			cursorLeftCb = w.cursorLeftCb
-		}
-		w.mu.Unlock()
-
-		if cursorLeftCb != nil {
-			cursorLeftCb()
+		if cb := w.cursorLeftCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb()
+			}
 		}
 
 	case C.XCB_INPUT_FOCUS_IN:
@@ -551,15 +529,10 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 			return
 		}
 
-		w.mu.Lock()
-		var focusedCb events.WindowFocusedCallback
-		if w.focusedCb != nil {
-			focusedCb = w.focusedCb
-		}
-		w.mu.Unlock()
-
-		if focusedCb != nil {
-			focusedCb()
+		if cb := w.focusedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb()
+			}
 		}
 
 	case C.XCB_INPUT_FOCUS_OUT:
@@ -567,26 +540,18 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 
 		w, ok := d.windows[ev.event]
 		if ok {
-			w.mu.Lock()
-			var modifiersChangedCb events.WindowModifiersChangedCallback
-			if w.modifiersChangedCb != nil {
-				modifiersChangedCb = w.modifiersChangedCb
-			}
-			w.mu.Unlock()
-
-			if modifiersChangedCb != nil && d.modifiers != 0 {
-				modifiersChangedCb(0)
+			if d.modifiers != 0 {
+				if cb := w.modifiersChangedCb.Load(); cb != nil {
+					if cb := (*cb); cb != nil {
+						cb(0)
+					}
+				}
 			}
 
-			w.mu.Lock()
-			var unfocusedCb events.WindowUnfocusedCallback
-			if w.unfocusedCb != nil {
-				unfocusedCb = w.unfocusedCb
-			}
-			w.mu.Unlock()
-
-			if unfocusedCb != nil {
-				unfocusedCb()
+			if cb := w.unfocusedCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb()
+				}
 			}
 		}
 
@@ -610,56 +575,46 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 			return
 		}
 
-		w.mu.Lock()
-		var mouseInputCb events.WindowMouseInputCallback
-		if w.mouseInputCb != nil {
-			mouseInputCb = w.mouseInputCb
-		}
-		w.mu.Unlock()
+		if cb := w.mouseInputCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				var state events.ButtonState
+				if ev.event_type == C.XCB_INPUT_BUTTON_PRESS {
+					state = events.ButtonStatePressed
+				} else {
+					state = events.ButtonStateReleased
+				}
 
-		if mouseInputCb != nil {
-			var state events.ButtonState
-			if ev.event_type == C.XCB_INPUT_BUTTON_PRESS {
-				state = events.ButtonStatePressed
-			} else {
-				state = events.ButtonStateReleased
-			}
+				switch ev.detail {
+				case C.XCB_BUTTON_INDEX_1:
+					cb(state, events.MouseButtonLeft)
 
-			switch ev.detail {
-			case C.XCB_BUTTON_INDEX_1:
-				mouseInputCb(state, events.MouseButtonLeft)
+				case C.XCB_BUTTON_INDEX_2:
+					cb(state, events.MouseButtonMiddle)
 
-			case C.XCB_BUTTON_INDEX_2:
-				mouseInputCb(state, events.MouseButtonMiddle)
+				case C.XCB_BUTTON_INDEX_3:
+					cb(state, events.MouseButtonRight)
 
-			case C.XCB_BUTTON_INDEX_3:
-				mouseInputCb(state, events.MouseButtonRight)
+				case 4, 5, 6, 7:
+					// ignore, handled below
 
-			case 4, 5, 6, 7:
-				// ignore, handled below
-
-			default:
-				mouseInputCb(state, events.MouseButton(ev.detail))
+				default:
+					cb(state, events.MouseButton(ev.detail))
+				}
 			}
 		}
 
-		w.mu.Lock()
-		var mouseWheelCb events.WindowMouseScrollCallback
-		if w.mouseWheelCb != nil {
-			mouseWheelCb = w.mouseWheelCb
-		}
-		w.mu.Unlock()
-
-		if mouseWheelCb != nil {
-			switch ev.detail {
-			case 4:
-				mouseWheelCb(events.MouseScrollDeltaLine, events.MouseScrollAxisVertical, 1)
-			case 5:
-				mouseWheelCb(events.MouseScrollDeltaLine, events.MouseScrollAxisVertical, -1)
-			case 6:
-				mouseWheelCb(events.MouseScrollDeltaLine, events.MouseScrollAxisHorizontal, 1)
-			case 7:
-				mouseWheelCb(events.MouseScrollDeltaLine, events.MouseScrollAxisVertical, -1)
+		if cb := w.mouseWheelCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				switch ev.detail {
+				case 4:
+					cb(events.MouseScrollDeltaLine, events.MouseScrollAxisVertical, 1)
+				case 5:
+					cb(events.MouseScrollDeltaLine, events.MouseScrollAxisVertical, -1)
+				case 6:
+					cb(events.MouseScrollDeltaLine, events.MouseScrollAxisHorizontal, 1)
+				case 7:
+					cb(events.MouseScrollDeltaLine, events.MouseScrollAxisVertical, -1)
+				}
 			}
 		}
 
@@ -681,15 +636,12 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 			w.mu.Lock()
 			if w.cursorPos != newCursorPos {
 				w.cursorPos = newCursorPos
-
-				var cursorMovedCb events.WindowCursorMovedCallback
-				if w.cursorMovedCb != nil {
-					cursorMovedCb = w.cursorMovedCb
-				}
 				w.mu.Unlock()
 
-				if cursorMovedCb != nil {
-					cursorMovedCb(newCursorPos.X, newCursorPos.Y)
+				if cb := w.cursorMovedCb.Load(); cb != nil {
+					if cb := (*cb); cb != nil {
+						cb(newCursorPos.X, newCursorPos.Y)
+					}
 				}
 			} else {
 				w.mu.Unlock()
@@ -721,21 +673,15 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 					dev.horizontalScroll.position = x
 					d.scrollingDevices[ev.sourceid] = dev
 
-					w.mu.Lock()
-					var mouseWheelCb events.WindowMouseScrollCallback
-					if w.mouseWheelCb != nil {
-						mouseWheelCb = w.mouseWheelCb
+					if cb := w.mouseWheelCb.Load(); cb != nil {
+						if cb := (*cb); cb != nil {
+							cb(
+								events.MouseScrollDeltaLine,
+								events.MouseScrollAxisHorizontal,
+								-float64(delta),
+							)
+						}
 					}
-					w.mu.Unlock()
-
-					if mouseWheelCb != nil {
-						mouseWheelCb(
-							events.MouseScrollDeltaLine,
-							events.MouseScrollAxisHorizontal,
-							-float64(delta),
-						)
-					}
-
 				} else if dev.verticalScroll.index == i {
 					x := fixed3232ToFloat64(axisValues[axisValuesIndex])
 					axisValuesIndex++
@@ -744,19 +690,14 @@ func (d *Display) processXIEvents(e *C.xcb_generic_event_t) {
 					dev.verticalScroll.position = x
 					d.scrollingDevices[ev.sourceid] = dev
 
-					w.mu.Lock()
-					var mouseWheelCb events.WindowMouseScrollCallback
-					if w.mouseWheelCb != nil {
-						mouseWheelCb = w.mouseWheelCb
-					}
-					w.mu.Unlock()
-
-					if mouseWheelCb != nil {
-						mouseWheelCb(
-							events.MouseScrollDeltaLine,
-							events.MouseScrollAxisVertical,
-							-float64(delta),
-						)
+					if cb := w.mouseWheelCb.Load(); cb != nil {
+						if cb := (*cb); cb != nil {
+							cb(
+								events.MouseScrollDeltaLine,
+								events.MouseScrollAxisVertical,
+								-float64(delta),
+							)
+						}
 					}
 				}
 			}
@@ -831,15 +772,10 @@ func (d *Display) processXkbEvent(e *C.xcb_generic_event_t) {
 			return
 		}
 
-		w.mu.Lock()
-		var modifiersChangedCb events.WindowModifiersChangedCallback
-		if w.modifiersChangedCb != nil {
-			modifiersChangedCb = w.modifiersChangedCb
-		}
-		w.mu.Unlock()
-
-		if modifiersChangedCb != nil {
-			modifiersChangedCb(m)
+		if cb := w.modifiersChangedCb.Load(); cb != nil {
+			if cb := (*cb); cb != nil {
+				cb(m)
+			}
 		}
 	}
 }

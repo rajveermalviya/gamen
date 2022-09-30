@@ -730,7 +730,7 @@ func open_xcb_library() (*xcb_library, error) {
 		l.close()
 		return nil, err
 	}
-	l.xcb_input_button_press_axisvalues_handle, err = loadSym(l.libxcbXinputHandle, (*C.char)(unsafe.Pointer(&([]byte("xcb_input_button_press_valuator_mask\x00"))[0])))
+	l.xcb_input_button_press_axisvalues_handle, err = loadSym(l.libxcbXinputHandle, (*C.char)(unsafe.Pointer(&([]byte("xcb_input_button_press_axisvalues\x00"))[0])))
 	if err != nil {
 		l.close()
 		return nil, err
