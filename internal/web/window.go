@@ -10,6 +10,7 @@ import (
 	"github.com/rajveermalviya/gamen/cursors"
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 )
 
 var windowCounter uint64
@@ -24,18 +25,18 @@ type Window struct {
 	currentCursorIcon string
 
 	// callbacks
-	resizedCb           events.WindowResizedCallback
-	closeRequestedCb    events.WindowCloseRequestedCallback
-	focusedCb           events.WindowFocusedCallback
-	unfocusedCb         events.WindowUnfocusedCallback
-	cursorEnteredCb     events.WindowCursorEnteredCallback
-	cursorLeftCb        events.WindowCursorLeftCallback
-	cursorMovedCb       events.WindowCursorMovedCallback
-	mouseWheelCb        events.WindowMouseScrollCallback
-	mouseInputCb        events.WindowMouseInputCallback
-	modifiersChangedCb  events.WindowModifiersChangedCallback
-	keyboardInputCb     events.WindowKeyboardInputCallback
-	receivedCharacterCb events.WindowReceivedCharacterCallback
+	resizedCb           atomicx.Pointer[events.WindowResizedCallback]
+	closeRequestedCb    atomicx.Pointer[events.WindowCloseRequestedCallback]
+	focusedCb           atomicx.Pointer[events.WindowFocusedCallback]
+	unfocusedCb         atomicx.Pointer[events.WindowUnfocusedCallback]
+	cursorEnteredCb     atomicx.Pointer[events.WindowCursorEnteredCallback]
+	cursorLeftCb        atomicx.Pointer[events.WindowCursorLeftCallback]
+	cursorMovedCb       atomicx.Pointer[events.WindowCursorMovedCallback]
+	mouseWheelCb        atomicx.Pointer[events.WindowMouseScrollCallback]
+	mouseInputCb        atomicx.Pointer[events.WindowMouseInputCallback]
+	modifiersChangedCb  atomicx.Pointer[events.WindowModifiersChangedCallback]
+	keyboardInputCb     atomicx.Pointer[events.WindowKeyboardInputCallback]
+	receivedCharacterCb atomicx.Pointer[events.WindowReceivedCharacterCallback]
 }
 
 func NewWindow(d *Display) (*Window, error) {
@@ -65,18 +66,18 @@ func NewWindow(d *Display) (*Window, error) {
 
 func (w *Window) Destroy() {
 	w.destroyOnce.Do(func() {
-		w.resizedCb = nil
-		w.closeRequestedCb = nil
-		w.focusedCb = nil
-		w.unfocusedCb = nil
-		w.cursorEnteredCb = nil
-		w.cursorLeftCb = nil
-		w.cursorMovedCb = nil
-		w.mouseWheelCb = nil
-		w.mouseInputCb = nil
-		w.modifiersChangedCb = nil
-		w.keyboardInputCb = nil
-		w.receivedCharacterCb = nil
+		w.resizedCb.Store(nil)
+		w.closeRequestedCb.Store(nil)
+		w.focusedCb.Store(nil)
+		w.unfocusedCb.Store(nil)
+		w.cursorEnteredCb.Store(nil)
+		w.cursorLeftCb.Store(nil)
+		w.cursorMovedCb.Store(nil)
+		w.mouseWheelCb.Store(nil)
+		w.mouseInputCb.Store(nil)
+		w.modifiersChangedCb.Store(nil)
+		w.keyboardInputCb.Store(nil)
+		w.receivedCharacterCb.Store(nil)
 
 		for event, listener := range w.listeners {
 			w.canvas.Call("removeEventListener", event, listener)
@@ -109,8 +110,10 @@ func (w *Window) SetInnerSize(size dpi.Size[uint32]) {
 	if old != new {
 		go func() {
 			w.d.eventCallbacksChan <- func() {
-				if w.resizedCb != nil {
-					w.resizedCb(new.Width, new.Height, scaleFactor())
+				if cb := w.resizedCb.Load(); cb != nil {
+					if cb := (*cb); cb != nil {
+						cb(new.Width, new.Height, scaleFactor())
+					}
 				}
 			}
 		}()
@@ -184,32 +187,40 @@ func (w *Window) addListener(eventName string, f func(event js.Value)) {
 func setHandlers(w *Window) {
 	w.addListener("blur", func(event js.Value) {
 		w.d.eventCallbacksChan <- func() {
-			if w.unfocusedCb != nil {
-				w.unfocusedCb()
+			if cb := w.unfocusedCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb()
+				}
 			}
 		}
 	})
 
 	w.addListener("focus", func(event js.Value) {
 		w.d.eventCallbacksChan <- func() {
-			if w.focusedCb != nil {
-				w.focusedCb()
+			if cb := w.focusedCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb()
+				}
 			}
 		}
 	})
 
 	w.addListener("pointerover", func(event js.Value) {
 		w.d.eventCallbacksChan <- func() {
-			if w.cursorEnteredCb != nil {
-				w.cursorEnteredCb()
+			if cb := w.cursorEnteredCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb()
+				}
 			}
 		}
 	})
 
 	w.addListener("pointerout", func(event js.Value) {
 		w.d.eventCallbacksChan <- func() {
-			if w.cursorLeftCb != nil {
-				w.cursorLeftCb()
+			if cb := w.cursorLeftCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb()
+				}
 			}
 		}
 	})
@@ -221,8 +232,10 @@ func setHandlers(w *Window) {
 		}.ToPhysical(scaleFactor())
 
 		w.d.eventCallbacksChan <- func() {
-			if w.cursorMovedCb != nil {
-				w.cursorMovedCb(physicalPosition.X, physicalPosition.Y)
+			if cb := w.cursorMovedCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(physicalPosition.X, physicalPosition.Y)
+				}
 			}
 		}
 	})
@@ -274,8 +287,10 @@ func setHandlers(w *Window) {
 		}
 
 		w.d.eventCallbacksChan <- func() {
-			if w.mouseWheelCb != nil {
-				w.mouseWheelCb(delta, axis, value)
+			if cb := w.mouseWheelCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(delta, axis, value)
+				}
 			}
 		}
 	})
@@ -302,11 +317,15 @@ func setHandlers(w *Window) {
 		}
 
 		w.d.eventCallbacksChan <- func() {
-			if w.cursorMovedCb != nil {
-				w.cursorMovedCb(physicalPosition.X, physicalPosition.Y)
+			if cb := w.cursorMovedCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(physicalPosition.X, physicalPosition.Y)
+				}
 			}
-			if w.mouseInputCb != nil {
-				w.mouseInputCb(events.ButtonStatePressed, button)
+			if cb := w.mouseInputCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(events.ButtonStatePressed, button)
+				}
 			}
 		}
 	})
@@ -328,8 +347,10 @@ func setHandlers(w *Window) {
 		}
 
 		w.d.eventCallbacksChan <- func() {
-			if w.mouseInputCb != nil {
-				w.mouseInputCb(events.ButtonStateReleased, button)
+			if cb := w.mouseInputCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(events.ButtonStateReleased, button)
+				}
 			}
 		}
 	})
@@ -355,12 +376,14 @@ func setHandlers(w *Window) {
 				vKey = events.VirtualKey(scanCode)
 			}
 
-			if w.keyboardInputCb != nil {
-				w.keyboardInputCb(
-					events.ButtonStatePressed,
-					events.ScanCode(scanCode),
-					vKey,
-				)
+			if cb := w.keyboardInputCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(
+						events.ButtonStatePressed,
+						events.ScanCode(scanCode),
+						vKey,
+					)
+				}
 			}
 		}
 	})
@@ -379,12 +402,14 @@ func setHandlers(w *Window) {
 				vKey = events.VirtualKey(scanCode)
 			}
 
-			if w.keyboardInputCb != nil {
-				w.keyboardInputCb(
-					events.ButtonStateReleased,
-					events.ScanCode(scanCode),
-					vKey,
-				)
+			if cb := w.keyboardInputCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(
+						events.ButtonStateReleased,
+						events.ScanCode(scanCode),
+						vKey,
+					)
+				}
 			}
 		}
 	})
@@ -399,35 +424,51 @@ func setHandlers(w *Window) {
 		char := key[0]
 
 		w.d.eventCallbacksChan <- func() {
-			if w.receivedCharacterCb != nil {
-				w.receivedCharacterCb(char)
+			if cb := w.receivedCharacterCb.Load(); cb != nil {
+				if cb := (*cb); cb != nil {
+					cb(char)
+				}
 			}
 		}
 	})
 }
 
 func (w *Window) SetCloseRequestedCallback(cb events.WindowCloseRequestedCallback) {
-	w.closeRequestedCb = cb
+	w.closeRequestedCb.Store(&cb)
 }
-func (w *Window) SetResizedCallback(cb events.WindowResizedCallback)     { w.resizedCb = cb }
-func (w *Window) SetFocusedCallback(cb events.WindowFocusedCallback)     { w.focusedCb = cb }
-func (w *Window) SetUnfocusedCallback(cb events.WindowUnfocusedCallback) { w.unfocusedCb = cb }
+func (w *Window) SetResizedCallback(cb events.WindowResizedCallback) {
+	w.resizedCb.Store(&cb)
+}
+func (w *Window) SetFocusedCallback(cb events.WindowFocusedCallback) {
+	w.focusedCb.Store(&cb)
+}
+func (w *Window) SetUnfocusedCallback(cb events.WindowUnfocusedCallback) {
+	w.unfocusedCb.Store(&cb)
+}
 func (w *Window) SetCursorEnteredCallback(cb events.WindowCursorEnteredCallback) {
-	w.cursorEnteredCb = cb
+	w.cursorEnteredCb.Store(&cb)
 }
-func (w *Window) SetCursorLeftCallback(cb events.WindowCursorLeftCallback)   { w.cursorLeftCb = cb }
-func (w *Window) SetCursorMovedCallback(cb events.WindowCursorMovedCallback) { w.cursorMovedCb = cb }
-func (w *Window) SetMouseScrollCallback(cb events.WindowMouseScrollCallback) { w.mouseWheelCb = cb }
-func (w *Window) SetMouseInputCallback(cb events.WindowMouseInputCallback)   { w.mouseInputCb = cb }
+func (w *Window) SetCursorLeftCallback(cb events.WindowCursorLeftCallback) {
+	w.cursorLeftCb.Store(&cb)
+}
+func (w *Window) SetCursorMovedCallback(cb events.WindowCursorMovedCallback) {
+	w.cursorMovedCb.Store(&cb)
+}
+func (w *Window) SetMouseScrollCallback(cb events.WindowMouseScrollCallback) {
+	w.mouseWheelCb.Store(&cb)
+}
+func (w *Window) SetMouseInputCallback(cb events.WindowMouseInputCallback) {
+	w.mouseInputCb.Store(&cb)
+}
 func (w *Window) SetTouchInputCallback(cb events.WindowTouchInputCallback) {
 	// TODO:
 }
 func (w *Window) SetModifiersChangedCallback(cb events.WindowModifiersChangedCallback) {
-	w.modifiersChangedCb = cb
+	w.modifiersChangedCb.Store(&cb)
 }
 func (w *Window) SetKeyboardInputCallback(cb events.WindowKeyboardInputCallback) {
-	w.keyboardInputCb = cb
+	w.keyboardInputCb.Store(&cb)
 }
 func (w *Window) SetReceivedCharacterCallback(cb events.WindowReceivedCharacterCallback) {
-	w.receivedCharacterCb = cb
+	w.receivedCharacterCb.Store(&cb)
 }

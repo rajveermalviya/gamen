@@ -3,14 +3,15 @@
 package web
 
 import (
-	"sync"
 	"syscall/js"
 	"time"
+
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 )
 
 type Display struct {
-	destroyed   bool
-	destroyOnce sync.Once
+	destroyRequested atomicx.Bool
+	destroyed        atomicx.Bool
 
 	windows map[uint64]*Window
 
@@ -27,7 +28,7 @@ func NewDisplay() (*Display, error) {
 func (d *Display) Poll() bool {
 	wait := make(chan struct{})
 	cb := js.FuncOf(func(this js.Value, args []js.Value) any {
-		if d.destroyed {
+		if d.destroyed.Load() {
 			return nil
 		}
 
@@ -38,25 +39,33 @@ func (d *Display) Poll() bool {
 	defer cb.Release()
 	js.Global().Call("requestAnimationFrame", cb)
 
+outerloop:
 	for {
 		select {
 		case cb := <-d.eventCallbacksChan:
 			cb()
 
-		loop:
+		innerloop:
 			for {
 				select {
 				case cb := <-d.eventCallbacksChan:
 					cb()
 				default:
-					break loop
+					break innerloop
 				}
 			}
 
 		case <-wait:
-			return !d.destroyed
+			break outerloop
 		}
 	}
+
+	if d.destroyRequested.Load() && !d.destroyed.Load() {
+		d.destroy()
+		return false
+	}
+
+	return !d.destroyed.Load()
 }
 
 func (d *Display) Wait() bool {
@@ -73,7 +82,7 @@ func (d *Display) WaitTimeout(timeout time.Duration) bool {
 
 	select {
 	case <-timer.C:
-		return !d.destroyed
+		return !d.destroyed.Load()
 
 	case cb := <-d.eventCallbacksChan:
 		if !timer.Stop() {
@@ -88,25 +97,16 @@ func (d *Display) WaitTimeout(timeout time.Duration) bool {
 }
 
 func (d *Display) Destroy() {
-	d.destroyOnce.Do(func() {
-		for id, w := range d.windows {
-			w.Destroy()
+	d.destroyRequested.Store(true)
+}
 
-			d.windows[id] = nil
-			delete(d.windows, id)
-		}
+func (d *Display) destroy() {
+	for id, w := range d.windows {
+		w.Destroy()
 
-		// drain the channel
-	loop:
-		for {
-			select {
-			case cb := <-d.eventCallbacksChan:
-				cb()
-			default:
-				break loop
-			}
-		}
+		d.windows[id] = nil
+		delete(d.windows, id)
+	}
 
-		close(d.eventCallbacksChan)
-	})
+	close(d.eventCallbacksChan)
 }
