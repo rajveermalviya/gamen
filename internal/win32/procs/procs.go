@@ -4,6 +4,7 @@ package procs
 
 import (
 	"runtime"
+	"syscall"
 
 	"golang.org/x/sys/windows"
 )
@@ -56,7 +57,7 @@ var (
 )
 
 func GetModuleHandleW() (r uintptr) {
-	r, _, _ = _GetModuleHandleW.Call(0)
+	r, _, _ = syscall.SyscallN(_GetModuleHandleW.Addr(), 0)
 	return
 }
 
@@ -82,21 +83,21 @@ const (
 )
 
 func PeekMessageW(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg uintptr) bool {
-	r, _, _ := _PeekMessageW.Call(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg)
+	r, _, _ := syscall.SyscallN(_PeekMessageW.Addr(), lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg)
 	return r != 0
 }
 
 func TranslateMessage(lpMsg uintptr) bool {
-	r, _, _ := _TranslateMessage.Call(lpMsg)
+	r, _, _ := syscall.SyscallN(_TranslateMessage.Addr(), lpMsg)
 	return r != 0
 }
 
 func DispatchMessageW(lpMsg uintptr) {
-	_DispatchMessageW.Call(lpMsg)
+	syscall.SyscallN(_DispatchMessageW.Addr(), lpMsg)
 }
 
 func WaitMessage() bool {
-	r, _, _ := _WaitMessage.Call()
+	r, _, _ := syscall.SyscallN(_WaitMessage.Addr())
 	return r != 0
 }
 
@@ -105,12 +106,12 @@ const (
 )
 
 func MsgWaitForMultipleObjects(nCount, pHandles, fWaitAll, dwMilliseconds, dwWakeMask uintptr) uintptr {
-	r, _, _ := _MsgWaitForMultipleObjects.Call(nCount, pHandles, fWaitAll, dwMilliseconds, dwWakeMask)
+	r, _, _ := syscall.SyscallN(_MsgWaitForMultipleObjects.Addr(), nCount, pHandles, fWaitAll, dwMilliseconds, dwWakeMask)
 	return r
 }
 
 func PostMessageW(hWnd, Msg, wParam, lParam uintptr) bool {
-	r, _, _ := _PostMessageW.Call(hWnd, Msg, wParam, lParam)
+	r, _, _ := syscall.SyscallN(_PostMessageW.Addr(), hWnd, Msg, wParam, lParam)
 	return r != 0
 }
 
@@ -135,7 +136,7 @@ type WNDCLASSEXW struct {
 }
 
 func RegisterClassExW(class uintptr) (r uintptr) {
-	r, _, _ = _RegisterClassExW.Call(class)
+	r, _, _ = syscall.SyscallN(_RegisterClassExW.Addr(), class)
 	return
 }
 
@@ -177,7 +178,7 @@ func CreateWindowExW(
 	hInstance,
 	lpParam uintptr,
 ) (r uintptr) {
-	r, _, _ = _CreateWindowExW.Call(
+	r, _, _ = syscall.SyscallN(_CreateWindowExW.Addr(),
 		dwExStyle,
 		lpClassName,
 		lpWindowName,
@@ -248,7 +249,7 @@ const (
 )
 
 func DefWindowProcW(hWnd, Msg, wParam, lParam uintptr) (r uintptr) {
-	r, _, _ = _DefWindowProcW.Call(hWnd, Msg, wParam, lParam)
+	r, _, _ = syscall.SyscallN(_DefWindowProcW.Addr(), hWnd, Msg, wParam, lParam)
 	return r
 }
 
@@ -259,11 +260,11 @@ const GWL_USERDATA = ^uintptr(0) - 20 // -21
 func GetWindowLong(hWnd, nIndex uintptr) uintptr {
 	switch runtime.GOARCH {
 	case "amd64", "arm64":
-		r, _, _ := _GetWindowLongPtrW.Call(hWnd, nIndex)
+		r, _, _ := syscall.SyscallN(_GetWindowLongPtrW.Addr(), hWnd, nIndex)
 		return r
 
 	case "386", "arm":
-		r, _, _ := _GetWindowLongW.Call(hWnd, nIndex)
+		r, _, _ := syscall.SyscallN(_GetWindowLongW.Addr(), hWnd, nIndex)
 		return r
 	}
 
@@ -273,11 +274,11 @@ func GetWindowLong(hWnd, nIndex uintptr) uintptr {
 func SetWindowLong(hWnd, nIndex, dwNewLong uintptr) uintptr {
 	switch runtime.GOARCH {
 	case "amd64", "arm64":
-		r, _, _ := _SetWindowLongPtrW.Call(hWnd, nIndex, dwNewLong)
+		r, _, _ := syscall.SyscallN(_SetWindowLongPtrW.Addr(), hWnd, nIndex, dwNewLong)
 		return r
 
 	case "386", "arm":
-		r, _, _ := _SetWindowLongW.Call(hWnd, nIndex, dwNewLong)
+		r, _, _ := syscall.SyscallN(_SetWindowLongW.Addr(), hWnd, nIndex, dwNewLong)
 		return r
 	}
 
@@ -305,17 +306,17 @@ const (
 )
 
 func LoadCursorW(hInstance, lpCursorName uintptr) (r uintptr) {
-	r, _, _ = _LoadCursorW.Call(hInstance, lpCursorName)
+	r, _, _ = syscall.SyscallN(_LoadCursorW.Addr(), hInstance, lpCursorName)
 	return
 }
 
 func SetCursor(hcursor uintptr) (r uintptr) {
-	r, _, _ = _SetCursor.Call(hcursor)
+	r, _, _ = syscall.SyscallN(_SetCursor.Addr(), hcursor)
 	return
 }
 
 func ShowCursor(bShow uintptr) uintptr {
-	r, _, _ := _ShowCursor.Call(bShow)
+	r, _, _ := syscall.SyscallN(_ShowCursor.Addr(), bShow)
 	return r
 }
 
@@ -332,17 +333,17 @@ type TRACKMOUSEEVENT struct {
 }
 
 func TrackMouseEvent(lpEventTrack uintptr) bool {
-	r, _, _ := _TrackMouseEvent.Call(lpEventTrack)
+	r, _, _ := syscall.SyscallN(_TrackMouseEvent.Addr(), lpEventTrack)
 	return r != 0
 }
 
 func SetCapture(hwnd uintptr) (r uintptr) {
-	r, _, _ = _SetCapture.Call(hwnd)
+	r, _, _ = syscall.SyscallN(_SetCapture.Addr(), hwnd)
 	return
 }
 
 func ReleaseCapture() bool {
-	r, _, _ := _ReleaseCapture.Call()
+	r, _, _ := syscall.SyscallN(_ReleaseCapture.Addr())
 	return r != 0
 }
 
@@ -596,12 +597,12 @@ const (
 )
 
 func GetKeyboardLayout(idThread uintptr) uintptr {
-	r, _, _ := _GetKeyboardLayout.Call(idThread)
+	r, _, _ := syscall.SyscallN(_GetKeyboardLayout.Addr(), idThread)
 	return r
 }
 
 func ToUnicodeEx(wVirtKey, wScanCode, lpKeyState, pwszBuff, cchBuff, wFlags, dwhkl uintptr) uintptr {
-	r, _, _ := _ToUnicodeEx.Call(wVirtKey, wScanCode, lpKeyState, pwszBuff, cchBuff, wFlags, dwhkl)
+	r, _, _ := syscall.SyscallN(_ToUnicodeEx.Addr(), wVirtKey, wScanCode, lpKeyState, pwszBuff, cchBuff, wFlags, dwhkl)
 	return r
 }
 
@@ -609,17 +610,17 @@ const MAPVK_VK_TO_CHAR = 2
 const MAPVK_VSC_TO_VK_EX = 3
 
 func MapVirtualKeyW(uCode, uMapType uintptr) uintptr {
-	r, _, _ := _MapVirtualKeyW.Call(uCode, uMapType)
+	r, _, _ := syscall.SyscallN(_MapVirtualKeyW.Addr(), uCode, uMapType)
 	return r
 }
 
 func GetKeyboardState(lpKeyState uintptr) bool {
-	r, _, _ := _GetKeyboardState.Call(lpKeyState)
+	r, _, _ := syscall.SyscallN(_GetKeyboardState.Addr(), lpKeyState)
 	return r != 0
 }
 
 func DestroyWindow(hwnd uintptr) bool {
-	r, _, _ := _DestroyWindow.Call(hwnd)
+	r, _, _ := syscall.SyscallN(_DestroyWindow.Addr(), hwnd)
 	return r != 0
 }
 
@@ -631,22 +632,22 @@ type RECT struct {
 }
 
 func GetClientRect(hWnd, lpRect uintptr) bool {
-	r, _, _ := _GetClientRect.Call(hWnd, lpRect)
+	r, _, _ := syscall.SyscallN(_GetClientRect.Addr(), hWnd, lpRect)
 	return r != 0
 }
 
 func AdjustWindowRectEx(hwnd, style, styleEx, rect uintptr) bool {
-	menu, _, _ := _GetMenu.Call(hwnd)
+	menu, _, _ := syscall.SyscallN(_GetMenu.Addr(), hwnd)
 	if menu != 0 {
 		menu = 1
 	}
 
 	if _GetDpiForWindow.Find() == nil && _AdjustWindowRectExForDpi.Find() == nil {
-		dpi, _, _ := _GetDpiForWindow.Call(hwnd)
-		r, _, _ := _AdjustWindowRectExForDpi.Call(rect, style, menu, styleEx, dpi)
+		dpi, _, _ := syscall.SyscallN(_GetDpiForWindow.Addr(), hwnd)
+		r, _, _ := syscall.SyscallN(_AdjustWindowRectExForDpi.Addr(), rect, style, menu, styleEx, dpi)
 		return r != 0
 	} else {
-		r, _, _ := _AdjustWindowRectEx.Call(rect, style, menu, styleEx)
+		r, _, _ := syscall.SyscallN(_AdjustWindowRectEx.Addr(), rect, style, menu, styleEx)
 		return r != 0
 	}
 }
@@ -663,12 +664,12 @@ const SWP_NOSIZE = 1
 const HWND_TOP = 0
 
 func SetWindowPos(hWnd, hWndInsertAfter, X, Y, cx, cy, uFlags uintptr) bool {
-	r, _, _ := _SetWindowPos.Call(hWnd, hWndInsertAfter, X, Y, cx, cy, uFlags)
+	r, _, _ := syscall.SyscallN(_SetWindowPos.Addr(), hWnd, hWndInsertAfter, X, Y, cx, cy, uFlags)
 	return r != 0
 }
 
 func InvalidateRgn(hwnd, hrng, berase uintptr) bool {
-	r, _, _ := _InvalidateRgn.Call(hwnd, hrng, berase)
+	r, _, _ := syscall.SyscallN(_InvalidateRgn.Addr(), hwnd, hrng, berase)
 	return r != 0
 }
 
@@ -692,17 +693,17 @@ const (
 )
 
 func ShowWindow(hWnd, nCmdShow uintptr) bool {
-	r, _, _ := _ShowWindow.Call(hWnd, nCmdShow)
+	r, _, _ := syscall.SyscallN(_ShowWindow.Addr(), hWnd, nCmdShow)
 	return r != 0
 }
 
 func GetCursorPos(point uintptr) bool {
-	r, _, _ := _GetCursorPos.Call(point)
+	r, _, _ := syscall.SyscallN(_GetCursorPos.Addr(), point)
 	return r != 0
 }
 
 func SetWindowTextW(hwnd, lpstring uintptr) bool {
-	r, _, _ := _SetWindowTextW.Call(hwnd, lpstring)
+	r, _, _ := syscall.SyscallN(_SetWindowTextW.Addr(), hwnd, lpstring)
 	return r != 0
 }
 
@@ -716,16 +717,16 @@ type WINDOWPLACEMENT struct {
 }
 
 func GetWindowPlacement(hWnd, lpwndpl uintptr) bool {
-	r, _, _ := _GetWindowPlacement.Call(hWnd, lpwndpl)
+	r, _, _ := syscall.SyscallN(_GetWindowPlacement.Addr(), hWnd, lpwndpl)
 	return r != 0
 }
 func SetWindowPlacement(hWnd, lpwndpl uintptr) bool {
-	r, _, _ := _SetWindowPlacement.Call(hWnd, lpwndpl)
+	r, _, _ := syscall.SyscallN(_SetWindowPlacement.Addr(), hWnd, lpwndpl)
 	return r != 0
 }
 
 func MonitorFromWindow(hwnd, dwFlags uintptr) uintptr {
-	r, _, _ := _MonitorFromWindow.Call(hwnd, dwFlags)
+	r, _, _ := syscall.SyscallN(_MonitorFromWindow.Addr(), hwnd, dwFlags)
 	return r
 }
 
@@ -741,6 +742,6 @@ const (
 )
 
 func GetMonitorInfoW(hMonitor, lpmi uintptr) bool {
-	r, _, _ := _GetMonitorInfoW.Call(hMonitor, lpmi)
+	r, _, _ := syscall.SyscallN(_GetMonitorInfoW.Addr(), hMonitor, lpmi)
 	return r != 0
 }
