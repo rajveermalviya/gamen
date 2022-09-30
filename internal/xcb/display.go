@@ -27,17 +27,19 @@ import (
 	"github.com/rajveermalviya/gamen/cursors"
 	"github.com/rajveermalviya/gamen/dpi"
 	"github.com/rajveermalviya/gamen/events"
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 	"github.com/rajveermalviya/gamen/internal/xkbcommon"
 	"golang.org/x/sys/unix"
 )
 
 type Display struct {
-	l         *xcb_library
-	destroyed bool
+	l *xcb_library
+
+	mu sync.Mutex
 	// we allow destroy function to be called multiple
 	// times, but in reality we run it once
-	destroyOnce sync.Once
-	mu          sync.Mutex
+	destroyRequested atomicx.Bool
+	destroyed        atomicx.Bool
 
 	xlibDisp *C.Display
 	xcbConn  *C.struct_xcb_connection_t
@@ -215,10 +217,6 @@ func NewDisplay() (*Display, error) {
 }
 
 func (d *Display) Poll() bool {
-	if d.destroyed {
-		return false
-	}
-
 	events := make([]*C.xcb_generic_event_t, 0, 2048)
 
 	for {
@@ -233,14 +231,15 @@ func (d *Display) Poll() bool {
 	for _, ev := range events {
 		d.processEvent(ev)
 	}
-	return !d.destroyed
+
+	if d.destroyRequested.Load() && !d.destroyed.Load() {
+		d.destroy()
+		return false
+	}
+	return !d.destroyed.Load()
 }
 
 func (d *Display) Wait() bool {
-	if d.destroyed {
-		return false
-	}
-
 	fds := []unix.PollFd{{
 		Fd:     int32(d.l.xcb_get_file_descriptor(d.xcbConn)),
 		Events: unix.POLLIN,
@@ -253,10 +252,6 @@ func (d *Display) Wait() bool {
 }
 
 func (d *Display) WaitTimeout(timeout time.Duration) bool {
-	if d.destroyed {
-		return false
-	}
-
 	fds := []unix.PollFd{{
 		Fd:     int32(d.l.xcb_get_file_descriptor(d.xcbConn)),
 		Events: unix.POLLIN,
@@ -313,40 +308,42 @@ func poll(fds []unix.PollFd, timeout time.Duration) bool {
 }
 
 func (d *Display) Destroy() {
-	d.destroyOnce.Do(func() {
-		d.mu.Lock()
-		defer d.mu.Unlock()
+	d.destroyRequested.Store(true)
+}
 
-		d.destroyed = true
+func (d *Display) destroy() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 
-		for id, w := range d.windows {
-			w.Destroy()
+	for id, w := range d.windows {
+		w.Destroy()
 
-			d.windows[id] = nil
-			delete(d.windows, id)
-		}
+		d.windows[id] = nil
+		delete(d.windows, id)
+	}
 
-		for i, c := range d.cursors {
-			d.l.xcb_free_cursor(d.xcbConn, c)
-			delete(d.cursors, i)
-		}
+	for i, c := range d.cursors {
+		d.l.xcb_free_cursor(d.xcbConn, c)
+		delete(d.cursors, i)
+	}
 
-		if d.xkb != nil {
-			d.xkb.Destroy()
-			d.xkb = nil
-		}
+	if d.xkb != nil {
+		d.xkb.Destroy()
+		d.xkb = nil
+	}
 
-		if d.xlibDisp != nil {
-			d.l.XCloseDisplay(d.xlibDisp)
-			d.xlibDisp = nil
-			d.xcbConn = nil
-		}
+	if d.xlibDisp != nil {
+		d.l.XCloseDisplay(d.xlibDisp)
+		d.xlibDisp = nil
+		d.xcbConn = nil
+	}
 
-		if d.l != nil {
-			d.l.close()
-			d.l = nil
-		}
-	})
+	if d.l != nil {
+		d.l.close()
+		d.l = nil
+	}
+
+	d.destroyed.Store(true)
 }
 
 func (d *Display) processEvent(e *C.xcb_generic_event_t) {
