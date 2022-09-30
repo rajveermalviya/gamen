@@ -109,4 +109,6 @@ func (d *Display) destroy() {
 	}
 
 	close(d.eventCallbacksChan)
+
+	d.destroyed.Store(true)
 }
