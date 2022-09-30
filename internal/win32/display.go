@@ -3,17 +3,18 @@
 package win32
 
 import (
-	"sync"
 	"time"
 	"unsafe"
 
+	"github.com/rajveermalviya/gamen/internal/common/atomicx"
 	"github.com/rajveermalviya/gamen/internal/win32/procs"
 )
 
 type Display struct {
-	windows     map[uintptr]*Window
-	destroyed   bool
-	destroyOnce sync.Once
+	windows map[uintptr]*Window
+
+	destroyRequested atomicx.Bool
+	destroyed        atomicx.Bool
 }
 
 func NewDisplay() (*Display, error) {
@@ -23,16 +24,18 @@ func NewDisplay() (*Display, error) {
 }
 
 func (d *Display) Destroy() {
-	d.destroyOnce.Do(func() {
-		d.destroyed = true
+	d.destroyRequested.Store(true)
+}
 
-		for hwnd, w := range d.windows {
-			w.Destroy()
+func (d *Display) destroy() {
+	for hwnd, w := range d.windows {
+		w.Destroy()
 
-			d.windows[hwnd] = nil
-			delete(d.windows, hwnd)
-		}
-	})
+		d.windows[hwnd] = nil
+		delete(d.windows, hwnd)
+	}
+
+	d.destroyed.Store(true)
 }
 
 func (d *Display) Poll() bool {
@@ -43,7 +46,12 @@ func (d *Display) Poll() bool {
 		procs.DispatchMessageW(uintptr(unsafe.Pointer(&msg)))
 	}
 
-	return !d.destroyed
+	if d.destroyRequested.Load() && !d.destroyed.Load() {
+		d.destroy()
+		return false
+	}
+
+	return !d.destroyed.Load()
 }
 
 func (d *Display) Wait() bool {
