@@ -37,7 +37,7 @@ var (
 	_ReleaseCapture           = user32.NewProc("ReleaseCapture")
 	_GetKeyboardLayout        = user32.NewProc("GetKeyboardLayout")
 	_ToUnicodeEx              = user32.NewProc("ToUnicodeEx")
-	_MapVirtualKeyA           = user32.NewProc("MapVirtualKeyA")
+	_MapVirtualKeyW           = user32.NewProc("MapVirtualKeyW")
 	_GetKeyboardState         = user32.NewProc("GetKeyboardState")
 	_GetMenu                  = user32.NewProc("GetMenu")
 	_GetDpiForWindow          = user32.NewProc("GetDpiForWindow")
@@ -608,8 +608,8 @@ func ToUnicodeEx(wVirtKey, wScanCode, lpKeyState, pwszBuff, cchBuff, wFlags, dwh
 const MAPVK_VK_TO_CHAR = 2
 const MAPVK_VSC_TO_VK_EX = 3
 
-func MapVirtualKeyA(uCode, uMapType uintptr) uintptr {
-	r, _, _ := _MapVirtualKeyA.Call(uCode, uMapType)
+func MapVirtualKeyW(uCode, uMapType uintptr) uintptr {
+	r, _, _ := _MapVirtualKeyW.Call(uCode, uMapType)
 	return r
 }
 

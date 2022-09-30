@@ -245,7 +245,7 @@ func mapVK(vk uintptr, scancode uintptr, extended bool) events.VirtualKey {
 		return events.VirtualKeyVolumeUp
 
 	case procs.VK_SHIFT:
-		switch procs.MapVirtualKeyA(scancode, procs.MAPVK_VSC_TO_VK_EX) {
+		switch procs.MapVirtualKeyW(scancode, procs.MAPVK_VSC_TO_VK_EX) {
 		case procs.VK_LSHIFT:
 			return events.VirtualKeyLShift
 		case procs.VK_RSHIFT:
@@ -271,7 +271,7 @@ func mapVK(vk uintptr, scancode uintptr, extended bool) events.VirtualKey {
 		}
 
 	default:
-		switch rune(procs.MapVirtualKeyA(vk, procs.MAPVK_VK_TO_CHAR) & 0x7FFF) {
+		switch rune(procs.MapVirtualKeyW(vk, procs.MAPVK_VK_TO_CHAR) & 0x7FFF) {
 		case '-':
 			return events.VirtualKeyHyphenMinus
 		case ';':
