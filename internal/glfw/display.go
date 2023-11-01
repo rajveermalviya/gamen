@@ -26,7 +26,6 @@ func (d *Display) NewWindow() (*Window, error) {
 }
 
 func (d *Display) Destroy() {
-	println("glfw.Terminate()")
 	glfw.Terminate()
 }
 

@@ -16,7 +16,6 @@ func (w *Window) GlfwWindow() *glfw.Window {
 }
 
 func (w *Window) Destroy() {
-	println("glfw.DestroyWindow()")
 	w.w.Destroy()
 }
 
