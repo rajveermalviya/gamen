@@ -20,6 +20,7 @@ var shader string
 
 type app struct {
 	window          display.Window
+	instance        *wgpu.Instance
 	adapter         *wgpu.Adapter
 	device          *wgpu.Device
 	surface         *wgpu.Surface
@@ -36,7 +37,9 @@ type app struct {
 func (a *app) init() {
 	var err error
 
-	a.adapter, err = wgpu.RequestAdapter(nil)
+	a.instance = wgpu.CreateInstance(nil)
+
+	a.adapter, err = a.instance.RequestAdapter(nil)
 	if err != nil {
 		panic(err)
 	}
@@ -61,15 +64,15 @@ func (a *app) deinit() {
 	a.hasInit = false
 
 	if a.shader != nil {
-		a.shader.Drop()
+		a.shader.Release()
 		a.shader = nil
 	}
 	if a.device != nil {
-		a.device.Drop()
+		a.device.Release()
 		a.device = nil
 	}
 	if a.adapter != nil {
-		a.adapter.Drop()
+		a.adapter.Release()
 		a.adapter = nil
 	}
 }
@@ -77,7 +80,7 @@ func (a *app) deinit() {
 func (a *app) surfaceInit() {
 	var err error
 
-	a.surface = wgpu.CreateSurface(getSurfaceDescriptor(a.window))
+	a.surface = a.instance.CreateSurface(getSurfaceDescriptor(a.window))
 	if a.surface == nil {
 		panic("got nil surface")
 	}
@@ -144,11 +147,11 @@ func (a *app) surfaceDeinit() {
 		a.config = nil
 	}
 	if a.pipeline != nil {
-		a.pipeline.Drop()
+		a.pipeline.Release()
 		a.pipeline = nil
 	}
 	if a.surface != nil {
-		a.surface.Drop()
+		a.surface.Release()
 		a.surface = nil
 	}
 }
@@ -179,7 +182,7 @@ func (a *app) render() error {
 	if err != nil {
 		return err
 	}
-	defer nextTexture.Drop()
+	defer nextTexture.Release()
 
 	encoder, err := a.device.CreateCommandEncoder(&wgpu.CommandEncoderDescriptor{
 		Label: "Command Encoder",
@@ -204,7 +207,11 @@ func (a *app) render() error {
 	renderPass.End()
 
 	queue := a.device.GetQueue()
-	queue.Submit(encoder.Finish(nil))
+	buf, err := encoder.Finish(nil)
+	if err != nil {
+		return err
+	}
+	queue.Submit(buf)
 	a.swapChain.Present()
 
 	return nil
