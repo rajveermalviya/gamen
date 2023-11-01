@@ -11,7 +11,7 @@ type Window struct {
 	w *glfw.Window
 }
 
-func (w *Window) Window() *glfw.Window {
+func (w *Window) GlfwWindow() *glfw.Window {
 	return w.w
 }
 

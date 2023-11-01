@@ -12,7 +12,7 @@ import (
 func getSurfaceDescriptor(w display.Window) *wgpu.SurfaceDescriptor {
 	switch w := w.(type) {
 	case *glfw.Window:
-		return wgpuglfw.GetSurfaceDescriptor(w.Window())
+		return wgpuglfw.GetSurfaceDescriptor(w.GlfwWindow())
 	default:
 		panic("unsupported window")
 	}

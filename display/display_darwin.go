@@ -3,6 +3,7 @@
 package display
 
 import (
+	glfwraw "github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/rajveermalviya/gamen/internal/glfw"
 )
 
@@ -23,4 +24,8 @@ func NewDisplay() (Display, error) {
 // Must only be called from main goroutine.
 func NewWindow(d Display) (Window, error) {
 	return d.(*glfw.Display).NewWindow()
+}
+
+type GlfwWindow interface {
+	GlfwWindow() *glfwraw.Window
 }
