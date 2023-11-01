@@ -54,6 +54,13 @@ jobs:
               set -x;
               tsukuru build apk ./examples/hello
 
+          - name: Test build on macOS
+            os: macos-latest
+            build_cmd: |
+              set -x;
+              go build -o out ./examples/hello
+              file out
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
