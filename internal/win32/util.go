@@ -15,6 +15,17 @@ func hiword(x uint32) uint16 {
 	return uint16((x >> 16) & 0xFFFF)
 }
 
+func isSurrogatedCharacter(x uint32) bool {
+	return x > 0xd800
+}
+
+// surrogatedUtf16toRune recovers code points from high and low surrogates
+func surrogatedUtf16toRune(high uint32, low uint32) rune {
+	high -= 0xd800
+	low -= 0xdc00
+	return rune(high<<10) + rune(low) + rune(0x10000)
+}
+
 func decodeUtf16(s uint16) rune {
 	const (
 		// 0xd800-0xdc00 encodes the high 10 bits of a pair.
