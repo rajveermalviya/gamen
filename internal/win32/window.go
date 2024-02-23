@@ -37,6 +37,8 @@ type Window struct {
 	cursorCaptureCount int                         // non-shared
 	modifiers          events.ModifiersState       // non-shared
 
+	highSurrogated rune // non-shared
+
 	// callbacks
 	resizedCb           atomicx.Pointer[events.WindowResizedCallback]
 	closeRequestedCb    atomicx.Pointer[events.WindowCloseRequestedCallback]
@@ -809,11 +811,21 @@ func windowProc(window, msg, wparam, lparam uintptr) uintptr {
 			}
 		}
 		return 0
-
 	case procs.WM_CHAR, procs.WM_SYSCHAR:
+		// Most UTF16 without surrogates can simply be considered rune.
+		ch := rune(wparam)
+		// The surrogated UTF16 character is POSTed as two consecutive WM_CHARs: high surrogate and low surrogate.
+		if isSurrogatedCharacter(ch) {
+			if w.highSurrogated == 0 {
+				w.highSurrogated = ch
+				return 0
+			}
+			ch = surrogatedUtf16toRune(w.highSurrogated, ch)
+			w.highSurrogated = 0
+		}
 		if cb := w.receivedCharacterCb.Load(); cb != nil {
 			if cb := (*cb); cb != nil {
-				cb(decodeUtf16(uint16(wparam)))
+				cb(ch)
 			}
 		}
 		return 0
